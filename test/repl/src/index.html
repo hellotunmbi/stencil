@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Stencil REPL</title>
+  <meta name="Description" content="Welcome to the Stencil App Starter. You can use this starter to build entire apps all with web components using Stencil!">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0">
+  <meta name="theme-color" content="#16161d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="x-ua-compatible" content="IE=Edge">
+
+  <script type="module" src="/build/app.esm.js"></script>
+  <script nomodule src="/build/app.js"></script>
+  <link href="/build/app.css" rel="stylesheet">
+</head>
+<body>
+
+  <header>
+    Stencil REPL
+  </header>
+
+  <main>
+    <stencil-repl></stencil-repl>
+  </main>
+
+  <script>
+    const repl = document.querySelector('stencil-repl');
+    repl.appName = 'Hello Stencil';
+    repl.inputs = [
+//     {
+// name: `/tsconfig.json`,
+// code:
+// `
+// {
+//   "compilerOptions": {
+//     "adam": true
+//   }
+// }
+// `
+// },
+{
+name: `/hello-world.tsx`,
+code:
+`
+import { Component } from '@stencil/core';
+import { getText } from './util';
+
+@Component({
+  tag: 'hello-world'
+})
+export class HelloWorld {
+  render() {
+    const val: string = getText();
+    return val;
+  }
+}
+`
+},
+{
+name: `/util.ts`,
+code: `
+export const getText = () => {
+  const text: string = 'Hello World';
+  return text;
+};
+`
+}
+    ];
+  </script>
+</body>
+</html>

@@ -6,8 +6,6 @@
     "declaration": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "react",
-    "jsxFactory": "h",
     "lib": [
       "dom",
       "es2017",
@@ -17,30 +15,16 @@
     "moduleResolution": "node",
     "noImplicitAny": true,
     "noImplicitReturns": true,
+    "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "outDir": "../dist/transpiled-core",
+    "outDir": "../../../dist/transpiled-dev-server-client",
     "pretty": true,
-    "target": "es2017",
-    "baseUrl": ".",
-    "paths": {
-      "@build-conditionals": [
-        "./compiler/app-core/build-conditionals.ts"
-      ],
-      "@mock-doc": [
-        "./mock-doc/index.ts"
-      ],
-      "@testing": [
-        "../testing/index.js"
-      ],
-      "@utils": [
-        "./utils/index.ts"
-      ]
-    }
+    "rootDir": "../../",
+    "target": "es5",
+    "baseUrl": "."
   },
-  "include": [
-    "index.ts",
-    "../types/*.d.ts",
-    "runtime/**/*.ts"
+  "files": [
+    "./index.ts"
   ]
 }

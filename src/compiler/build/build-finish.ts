@@ -86,7 +86,7 @@ const buildDone = async (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx:
     }
 
     // emit a buildFinish event for anyone who cares
-    compilerCtx.events.emit('buildFinish', buildCtx.buildResults);
+    compilerCtx.events.emit('buildFinish', buildCtx.buildResults as any);
 
     // write all of our logs to disk if config'd to do so
     // do this even if there are errors or not the active build

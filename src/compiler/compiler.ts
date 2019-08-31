@@ -170,22 +170,18 @@ export class Compiler implements d.Compiler {
   on(eventName: 'buildLog', cb: (buildResults: d.BuildLog) => void): Function;
   on(eventName: 'buildFinish', cb: (buildResults: d.BuildResults) => void): Function;
   on(eventName: d.CompilerEventName, cb: any) {
-    return this.ctx.events.subscribe(eventName as any, cb);
+    return this.ctx.events.on(eventName as any, cb);
   }
 
   once(eventName: 'buildFinish'): Promise<d.BuildResults>;
   once(eventName: 'buildNoChange'): Promise<d.BuildNoChangeResults>;
   once(eventName: d.CompilerEventName) {
     return new Promise<any>(resolve => {
-      const off = this.ctx.events.subscribe(eventName as any, (...args: any[]) => {
+      const off = this.ctx.events.on(eventName as any, (...args: any[]) => {
         off();
         resolve.apply(this, args);
       });
     });
-  }
-
-  off(eventName: string, cb: Function) {
-    this.ctx.events.unsubscribe(eventName, cb);
   }
 
   trigger(eventName: 'fileUpdate', path: string): void;
@@ -235,11 +231,14 @@ export class Compiler implements d.Compiler {
 }
 
 
-function isValid(config: d.Config): [ boolean, d.Config | null] {
+function isValid(userConfig: d.Config): [ boolean, d.Config | null] {
   const diagnostics: d.Diagnostic[] = [];
+  let config: d.Config = null;
   try {
     // validate the build config
-    config = validateConfig(config, diagnostics, true);
+    const validated = validateConfig(userConfig);
+    config = validated.config;
+    diagnostics.push(...validated.diagnostics);
 
   } catch (e) {
     catchError(diagnostics, e, e.message);

@@ -21,6 +21,7 @@ export interface RollupResults {
 export interface BuildCtx {
   buildId: number;
   buildResults: d.BuildResults;
+  buildResults_next: d.CompilerBuildResults;
   buildMessages: string[];
   bundleBuildCount: number;
   collections: d.Collection[];
@@ -55,6 +56,7 @@ export interface BuildCtx {
   indexDoc: Document;
   isRebuild: boolean;
   moduleFiles: d.Module[];
+  outputs: d.BuildOutput[];
   packageJson: d.PackageJsonData;
   packageJsonFilePath: string;
   pendingCopyTasks: Promise<d.CopyResults>[];
@@ -210,9 +212,6 @@ export interface BuildComponent {
   dependencyOf?: string[];
   dependencies?: string[];
 }
-
-
-export type CompilerEventName = 'fileUpdate' | 'fileAdd' | 'fileDelete' | 'dirAdd' | 'dirDelete' | 'fsChange' | 'buildFinish' | 'buildNoChange' | 'buildLog';
 
 
 export interface BundleOutputChunk {

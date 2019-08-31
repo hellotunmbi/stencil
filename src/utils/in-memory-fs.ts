@@ -576,7 +576,7 @@ export class InMemoryFileSystem implements d.InMemoryFileSystem {
     this.items.clear();
   }
 
-  get keys() {
+  keys() {
     return Array.from(this.items.keys()).sort();
   }
 

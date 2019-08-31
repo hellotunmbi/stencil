@@ -1,5 +1,5 @@
 import * as d from '../../declarations';
-import { BuildEvents } from '../events';
+import { buildEvents } from '../events';
 import { Cache } from '../cache';
 import { InMemoryFileSystem, normalizePath } from '@utils';
 
@@ -21,7 +21,7 @@ export class CompilerContext implements d.CompilerCtx {
   cachedStyleMeta = new Map<string, d.StyleCompiler>();
   collections: d.CollectionCompilerMeta[] = [];
   compilerOptions: any = null;
-  events = new BuildEvents();
+  events = buildEvents();
   fs: d.InMemoryFileSystem;
   fsWatcher: d.FsWatcher = null;
   hasFsWatcherEvents = false;

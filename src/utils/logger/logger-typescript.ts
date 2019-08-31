@@ -172,12 +172,12 @@ const formatMessageText = (tsDiagnostic: ts.Diagnostic) => {
 
   let result = '';
 
-  while (diagnosticChain) {
-    if (!ignoreCodes.includes(diagnosticChain.code)) {
-      result += diagnosticChain.messageText + ' ';
+  while (diagnosticChain && (diagnosticChain as ts.DiagnosticMessageChain).code) {
+    if (!ignoreCodes.includes((diagnosticChain as ts.DiagnosticMessageChain).code)) {
+      result += (diagnosticChain as ts.DiagnosticMessageChain).messageText + ' ';
     }
 
-    diagnosticChain = diagnosticChain.next;
+    diagnosticChain = (diagnosticChain as ts.DiagnosticMessageChain).next as any;
   }
 
   if (isStencilConfig) {

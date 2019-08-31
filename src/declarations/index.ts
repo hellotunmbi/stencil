@@ -9,6 +9,7 @@ export * from './css-var-shim';
 export * from './collection';
 export * from './collection-manifest';
 export * from './compiler';
+export * from './compiler_next';
 export * from './component-compiler-meta';
 export * from './component-constructor';
 export * from './component-interfaces';

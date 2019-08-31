@@ -45,6 +45,9 @@ export async function startDevServerMain(config: d.Config, compilerCtx: d.Compil
         config.logger.debug(`dev server closed`);
       } catch (e) {}
       return Promise.resolve();
+    },
+    emit: () => {
+      //
     }
   };
 
@@ -69,11 +72,11 @@ function startServer(config: d.Config, compilerCtx: d.CompilerCtx, serverProcess
       mainReceivedMessageFromWorker(config, compilerCtx, serverProcess, msg, resolve);
     });
 
-    compilerCtx.events.subscribe('buildFinish', buildResults => {
+    compilerCtx.events.on('buildFinish', buildResults => {
       // a compiler build has finished
       // send the build results to the child server process
       const msg: d.DevServerMessage = {
-        buildResults: Object.assign({}, buildResults)
+        buildResults: Object.assign({}, buildResults as any)
       };
       delete msg.buildResults.entries;
       delete msg.buildResults.components;
@@ -81,7 +84,7 @@ function startServer(config: d.Config, compilerCtx: d.CompilerCtx, serverProcess
       sendMsg(serverProcess, msg);
     });
 
-    compilerCtx.events.subscribe('buildLog', buildLog => {
+    compilerCtx.events.on('buildLog', buildLog => {
       const msg: d.DevServerMessage = {
         buildLog: Object.assign({}, buildLog)
       };

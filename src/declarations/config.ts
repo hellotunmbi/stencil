@@ -179,6 +179,7 @@ export interface StencilConfig {
   devServer?: d.StencilDevServerConfig;
   enableCacheStats?: boolean;
   sys?: d.StencilSystem;
+  sys_next?: d.CompilerSystem;
   tsconfig?: string;
   validateTypes?: boolean;
   watchIgnoredRegex?: RegExp;

@@ -2,7 +2,12 @@ import * as d from '.';
 
 
 export interface InMemoryFileSystem {
-  disk: d.FileSystem;
+  /* new compiler */
+  sys?: d.CompilerSystem;
+
+  /** legacy */
+  disk?: d.FileSystem;
+
   accessData(filePath: string): Promise<{
     exists: boolean;
     isDirectory: boolean;
@@ -56,6 +61,6 @@ export interface InMemoryFileSystem {
   clearFileCache(filePath: string): void;
   getItem(itemPath: string): d.FsItem;
   clearCache(): void;
-  readonly keys: string[];
+  keys(): string[];
   getMemoryStats(): string;
 }

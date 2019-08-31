@@ -1,7 +1,7 @@
 import * as d from '.';
 
 
-export interface DevServer {
+export interface DevServer extends d.BuildEmitEvents {
   browserUrl: string;
   close(): Promise<void>;
 }

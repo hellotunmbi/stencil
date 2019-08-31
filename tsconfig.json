@@ -1,0 +1,76 @@
+{
+  "compilerOptions": {
+    "alwaysStrict": true,
+    "allowSyntheticDefaultImports": true,
+    "allowUnreachableCode": false,
+    "declaration": true,
+    "declarationDir": "dist",
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react",
+    "jsxFactory": "h",
+    "lib": [
+      "dom",
+      "es2017",
+      "esnext.array"
+    ],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "dist-ts",
+    "pretty": true,
+    "target": "es2017",
+    "baseUrl": ".",
+    "paths": {
+      "@build-conditionals": [
+        "src/compiler/app-core/build-conditionals.ts"
+      ],
+      "@compiler": [
+        "src/compiler_next/index.ts"
+      ],
+      "@dev-server": [
+        "src/dev-server_next/index-main.ts"
+      ],
+      "@mock-doc": [
+        "src/mock-doc/index.ts"
+      ],
+      "@platform": [
+        "src/client/index.ts"
+      ],
+      "@runtime": [
+        "src/runtime/index.ts"
+      ],
+      "@testing": [
+        "src/testing/index.ts"
+      ],
+      "@stencil/core/testing": [
+        "src/testing/index.ts"
+      ],
+      "@utils": [
+        "src/utils/index.ts"
+      ]
+    }
+  },
+
+  "files": [
+    "src/index.ts",
+    "src/cli_next/index.ts",
+    "src/client/index.ts",
+    "src/client/polyfills/css-shim/index.ts",
+    "src/compiler_next/index.ts",
+    "src/compiler_next/sys/modules/index.ts",
+    "src/dev-server_next/index-main.ts",
+    "src/dev-server_next/index-worker.ts",
+    "src/dev-server_next/dev-client/index.ts",
+    "src/mock-doc/index.ts",
+    "src/runtime/index.ts",
+    "src/testing/index.ts",
+    "src/utils/index.ts"
+  ],
+  "include": [
+    "types/*.d.ts"
+  ]
+}
