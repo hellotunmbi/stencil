@@ -11,7 +11,6 @@ export default {
     'child_process',
     'constants',
     'crypto',
-    'fs',
     'events',
     'os',
     'path',
@@ -35,6 +34,18 @@ export default {
         if (importee === '@dev-server') {
           return {
             id: '../dev-server/index.js',
+            external: true
+          }
+        }
+        if (importee === '@sys-node') {
+          return {
+            id: '../sys/node_next/index.js',
+            external: true
+          }
+        }
+        if (importee === 'fs') {
+          return {
+            id: '../sys/node/graceful-fs.js',
             external: true
           }
         }

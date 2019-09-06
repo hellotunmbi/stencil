@@ -13,7 +13,7 @@ export class ReplInputs {
 
   @Listen('fileSelect')
   onFileSelect(ev: UIEvent) {
-    this.selectedName = ev.detail as any;
+    this.selectedName = (ev.detail as any).name;
   }
 
   render() {
@@ -36,7 +36,7 @@ export class ReplInputs {
         </header>
         <section>
           {(this.inputs.map(input => (
-            <repl-input
+            <repl-input-file
               code={input.code}
               name={input.name}
               isSelected={input.name === this.selectedName}

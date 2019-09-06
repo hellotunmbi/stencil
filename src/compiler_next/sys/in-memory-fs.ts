@@ -22,9 +22,9 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
       isFile: false
     };
 
-    try {
-      const s = await stat(filePath);
-      item.exists = true;
+    const s = await stat(filePath);
+    if (s) {
+      item.exists = s.exists;
       item.isDirectory = s.isDirectory;
       item.isFile = s.isFile;
 
@@ -32,7 +32,7 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
       data.isDirectory = item.isDirectory;
       data.isFile = item.isFile;
 
-    } catch (e) {
+    } else {
       item.exists = false;
     }
 
@@ -183,17 +183,21 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
       }
     }
 
-    const fileContent = await sys.readFile(filePath);
+    const fileText = await sys.readFile(filePath);
 
     const item = getItem(filePath);
-    if (fileContent.length < MAX_TEXT_CACHE) {
-      item.exists = true;
-      item.isFile = true;
-      item.isDirectory = false;
-      item.fileText = fileContent;
+    if (typeof fileText === 'string') {
+      if (fileText.length < MAX_TEXT_CACHE) {
+        item.exists = true;
+        item.isFile = true;
+        item.isDirectory = false;
+        item.fileText = fileText;
+      }
+    } else {
+      item.exists = false;
     }
 
-    return fileContent;
+    return fileText;
   };
 
   /**
@@ -209,17 +213,21 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
       }
     }
 
-    const fileContent = sys.readFileSync(filePath);
+    const fileText = sys.readFileSync(filePath);
 
     const item = getItem(filePath);
-    if (fileContent.length < MAX_TEXT_CACHE) {
-      item.exists = true;
-      item.isFile = true;
-      item.isDirectory = false;
-      item.fileText = fileContent;
+    if (typeof fileText === 'string') {
+      if (fileText.length < MAX_TEXT_CACHE) {
+        item.exists = true;
+        item.isFile = true;
+        item.isDirectory = false;
+        item.fileText = fileText;
+      }
+    } else {
+      item.exists = false;
     }
 
-    return fileContent;
+    return fileText;
   };
 
   const remove = async (itemPath: string) => {
@@ -263,10 +271,14 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
 
     if (typeof item.isDirectory !== 'boolean' || typeof item.isFile !== 'boolean') {
       const s = await sys.stat(itemPath);
-      item.exists = true;
-      item.isDirectory = s.isDirectory();
-      item.isFile = s.isFile();
-      item.size = s.size;
+      if (s) {
+        item.exists = true;
+        item.isDirectory = s.isDirectory();
+        item.isFile = s.isFile();
+        item.size = s.size;
+      } else {
+        item.exists = false;
+      }
     }
 
     return {
@@ -287,9 +299,13 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
 
     if (typeof item.isDirectory !== 'boolean' || typeof item.isFile !== 'boolean') {
       const s = sys.statSync(itemPath);
-      item.exists = true;
-      item.isDirectory = s.isDirectory();
-      item.isFile = s.isFile();
+      if (s) {
+        item.exists = true;
+        item.isDirectory = s.isDirectory();
+        item.isFile = s.isFile();
+      } else {
+        item.exists = false;
+      }
     }
 
     return {
@@ -346,11 +362,15 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
         // it wasn't already queued to be written
         item.queueWriteToDisk = false;
       }
+
+      // ensure in-memory directories are created
+      await ensureDir(filePath, true);
+
     } else if (opts != null && opts.immediateWrite === true) {
 
       // If this is an immediate write then write the file
       // and do not add it to the queue
-      await ensureDir(filePath);
+      await ensureDir(filePath, false);
       await sys.writeFile(filePath, item.fileText);
 
     } else {
@@ -517,7 +537,7 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
     const instructions = getCommitInstructions();
 
     // ensure directories we need exist
-    const dirsAdded = await commitEnsureDirs(instructions.dirsToEnsure);
+    const dirsAdded = await commitEnsureDirs(instructions.dirsToEnsure, false);
 
     // write all queued the files
     const filesWritten = await commitWriteFiles(instructions.filesToWrite);
@@ -549,7 +569,7 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
     };
   };
 
-  const ensureDir = async (p: string) => {
+  const ensureDir = async (p: string, inMemoryOnly: boolean) => {
     const allDirs: string[] = [];
 
     while (true) {
@@ -563,10 +583,10 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
 
     allDirs.reverse();
 
-    await commitEnsureDirs(allDirs);
+    await commitEnsureDirs(allDirs, inMemoryOnly);
   };
 
-  const commitEnsureDirs = async (dirsToEnsure: string[]) => {
+  const commitEnsureDirs = async (dirsToEnsure: string[], inMemoryOnly: boolean) => {
     const dirsAdded: string[] = [];
 
     for (const dirPath of dirsToEnsure) {
@@ -583,7 +603,10 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
         item.isDirectory = true;
         item.isFile = false;
 
-        await sys.mkdir(dirPath);
+        if (!inMemoryOnly) {
+          await sys.mkdir(dirPath);
+        }
+
         dirsAdded.push(dirPath);
 
       } catch (e) {}

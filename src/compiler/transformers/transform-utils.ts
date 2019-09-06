@@ -97,14 +97,15 @@ export const removeDecorators = (node: ts.Node, decoratorNames: Set<string>) => 
       );
       return !decoratorNames.has(name);
     });
-
     if (updatedDecoratorList.length === 0) {
-      node.decorators = undefined;
+      return undefined;
     } else if (updatedDecoratorList.length !== node.decorators.length) {
-      node.decorators = ts.createNodeArray(updatedDecoratorList);
+      return ts.createNodeArray(updatedDecoratorList);
     }
   }
+  return node.decorators;
 };
+
 
 
 export const getStaticValue = (staticMembers: ts.ClassElement[], staticName: string): any => {
@@ -331,8 +332,8 @@ export const validateReferences = (config: d.Config, diagnostics: d.Diagnostic[]
   });
 };
 
-const getTypeReferenceLocation = (typeName: string, sourceFile: ts.SourceFile): d.ComponentCompilerTypeReference => {
-  const sourceFileObj = sourceFile.getSourceFile();
+const getTypeReferenceLocation = (typeName: string, tsNode: ts.Node): d.ComponentCompilerTypeReference => {
+  const sourceFileObj = tsNode.getSourceFile();
 
   // Loop through all top level imports to find any reference to the type for 'import' reference location
   const importTypeDeclaration = sourceFileObj.statements.find(st => {

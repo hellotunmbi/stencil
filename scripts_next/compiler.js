@@ -1,8 +1,9 @@
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
-import resolve from 'rollup-plugin-node-resolve';
+import nodeResolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import replace from 'rollup-plugin-replace';
+import json from 'rollup-plugin-json';
 import aliasPlugin from './helpers/alias-plugin';
 import modulesPlugin from './helpers/modules-plugin';
 
@@ -10,19 +11,24 @@ import modulesPlugin from './helpers/modules-plugin';
 const compilerIntro = fs.readFileSync(path.join(__dirname, 'helpers', 'compiler-intro.js'), 'utf8');
 const cjsIntro = fs.readFileSync(path.join(__dirname, 'helpers', 'compiler-cjs-intro.js'), 'utf8');
 const cjsOutro = fs.readFileSync(path.join(__dirname, 'helpers', 'compiler-cjs-outro.js'), 'utf8');
-
-
+const typescriptPkg = fs.readJSONSync(path.join(require.resolve('typescript'), '..', '..', 'package.json'));
 
 export default {
   input: 'dist-ts/compiler_next/index.js',
+  external: [
+  ],
   plugins: [
     aliasPlugin,
-    modulesPlugin,
-    resolve(),
+    modulesPlugin(),
+    nodeResolve({
+      preferBuiltins: false
+    }),
     commonjs(),
     replace({
-      '__VERSION:TYPESCRIPT__': '3.6.2'
+      '0.0.0-stencil-dev': '0.0.0-stencil-next',
+      '__VERSION:TYPESCRIPT__': typescriptPkg.version,
     }),
+    json(),
     {
       generateBundle(outputOpts) {
         const dts = `export * from '../dist/compiler_next/index';`;

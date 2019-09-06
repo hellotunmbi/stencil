@@ -7,7 +7,6 @@ export default {
   input: 'dist-ts/dev-server_next/index-worker.js',
   external: [
     'buffer',
-    'fs',
     'http',
     'https',
     'net',
@@ -18,6 +17,16 @@ export default {
     'zlib',
   ],
   plugins: [
+    {
+      resolveId(importee) {
+        if (importee === 'fs') {
+          return {
+            id: '../sys/node/graceful-fs.js',
+            external: true
+          }
+        }
+      }
+    },
     aliasPlugin,
     resolve({
       preferBuiltins: true

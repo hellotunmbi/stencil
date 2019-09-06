@@ -41,6 +41,8 @@ export interface CompilerCtx {
   styleModeNames: Set<string>;
   tsService: TsService;
 
+  rollupCache: Map<string, any>;
+
   reset(): void;
 }
 

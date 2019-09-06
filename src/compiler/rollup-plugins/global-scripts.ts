@@ -36,7 +36,7 @@ export function globalScriptsPlugin(config: d.Config, compilerCtx: d.CompilerCtx
   return {
     name: 'globalScriptsPlugin',
     resolveId(id) {
-      if (id === GLOBAL_ID) {
+      if (id === GLOBAL_BUNDLE_ID) {
         return {
           id,
         };
@@ -44,7 +44,7 @@ export function globalScriptsPlugin(config: d.Config, compilerCtx: d.CompilerCtx
       return null;
     },
     load(id) {
-      if (id === GLOBAL_ID) {
+      if (id === GLOBAL_BUNDLE_ID) {
         const imports = globalPaths
           .map((path, i) => `import global${i} from '${path}';`);
 
@@ -74,5 +74,5 @@ export function globalScriptsPlugin(config: d.Config, compilerCtx: d.CompilerCtx
 }
 
 const INJECT_CONTEXT = `import { Context } from '@stencil/core';\n`;
-const GLOBAL_ID = '@stencil/core/global-scripts';
+export const GLOBAL_BUNDLE_ID = '@stencil/core/global-scripts';
 

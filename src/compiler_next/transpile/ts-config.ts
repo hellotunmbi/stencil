@@ -7,8 +7,9 @@ export const getTsOptionsToExtend = (config: d.Config) => {
   const outDir = path.join(config.cacheDir, 'dist');
 
   const tsOptions: ts.CompilerOptions = {
+    experimentalDecorators: true,
     declaration: true,
-    incremental: true,
+    incremental: config.enableCache,
     module: ts.ModuleKind.ESNext,
     noEmitOnError: false,
     outDir,
@@ -20,15 +21,17 @@ export const getTsOptionsToExtend = (config: d.Config) => {
 };
 
 
-export const getTsConfigFallback = () => {
-  const tsCompilerOptions: ts.CompilerOptions = {
+export const TSCONFIG_NAME_FALLBACK = `tsconfig.fallback.json`;
 
-  };
+
+export const getTsConfigFallback = (config: d.Config) => {
+  const tsCompilerOptions: ts.CompilerOptions = {};
+
   const tsConfig: any = {
     compilerOptions: tsCompilerOptions,
+    include: [
+      config.srcDir + '/**/*'
+    ]
   };
   return tsConfig;
 };
-
-export const TSCONFIG_NAME_FALLBACK = `/tsconfig.fallback.json`;
-

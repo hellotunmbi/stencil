@@ -6,14 +6,21 @@ const rollupResolve = require('rollup-plugin-node-resolve');
 const rollupCommonjs = require('rollup-plugin-commonjs');
 const rollupJson = require('rollup-plugin-json');
 const glob = require('glob');
-const { run, updateBuildIds, relativeResolve } = require('./script-utils');
+const { relativeResolve } = require('./helpers/relative-resolve');
 
 const ROOT_DIR = path.join(__dirname, '..');
-const TRANSPILED_DIR = path.join(ROOT_DIR, 'dist-ts');
+const TRANSPILED_DIR = path.join(ROOT_DIR, 'dist-ts', 'sys', 'node_next');
+const DIST_DIR = path.join(ROOT_DIR, 'dist', 'sys', 'node_next');
 
 
 function bundleExternal(entryFileName) {
   return new Promise(resolve => {
+
+    const alreadyExists = fs.existsSync(path.join(DIST_DIR, entryFileName));
+    if (alreadyExists) {
+      resolve();
+      return;
+    }
 
     const whitelist = [
       'child_process',
@@ -22,9 +29,9 @@ function bundleExternal(entryFileName) {
     ];
 
     webpack({
-      entry: path.join(__dirname, '..', 'src', 'sys', 'node', 'bundles', entryFileName),
+      entry: path.join(__dirname, '..', 'src', 'sys', 'node_next', 'bundles', entryFileName),
       output: {
-        path: path.join(__dirname, '..', 'dist', 'sys', 'node'),
+        path: DIST_DIR,
         filename: entryFileName,
         libraryTarget: 'commonjs'
       },
@@ -35,7 +42,7 @@ function bundleExternal(entryFileName) {
         process: false,
         Buffer: false
       },
-      externals: function(context, request, callback) {
+      externals: function(_context, request, callback) {
         if (request.match(/^(\.{0,2})\//)) {
           // absolute and relative paths are not externals
           return callback();
@@ -92,9 +99,8 @@ function bundleExternal(entryFileName) {
 
 
 async function bundleNodeSysMain() {
-  const fileName = 'index.js';
-  const inputPath = path.join(TRANSPILED_DIR, 'sys', 'node', fileName);
-  const outputPath = path.join(ROOT_DIR, 'dist', 'sys', 'node', fileName);
+  const inputPath = path.join(TRANSPILED_DIR, 'index.js');
+  const outputPath = path.join(DIST_DIR, 'index.js');
 
   const rollupBuild = await rollup.rollup({
     input: inputPath,
@@ -103,7 +109,6 @@ async function bundleNodeSysMain() {
       'child_process',
       'crypto',
       'events',
-      'fs',
       'https',
       'module',
       'path',
@@ -117,17 +122,26 @@ async function bundleNodeSysMain() {
     plugins: [
       {
         resolveId(importee) {
+          if (importee === '@compiler') {
+            return {
+              id: '../../../compiler/stencil_next.js',
+              external: true
+            }
+          }
           if (importee === 'resolve') {
             return path.join(__dirname, 'helpers', 'resolve.js');
-          }
-          if (importee === 'graceful-fs') {
-            return { id: './graceful-fs.js', external: true };
           }
           if (importee === '@mock-doc') {
             return relativeResolve('../../mock-doc');
           }
           if (importee === '@utils') {
             return relativeResolve('../../utils');
+          }
+          if (importee === 'fs') {
+            return {
+              id: './graceful-fs.js',
+              external: true
+            }
           }
         }
       },
@@ -152,7 +166,7 @@ async function bundleNodeSysMain() {
     file: outputPath
   });
 
-  const outputText = updateBuildIds(output[0].code);
+  const outputText = output[0].code; //updateBuildIds(output[0].code);
 
   await fs.ensureDir(path.dirname(outputPath));
   await fs.writeFile(outputPath, outputText);
@@ -166,9 +180,9 @@ async function copyXdgOpen() {
     absolute: true
   });
   if (xdgOpenSrcPath.length !== 1) {
-    throw new Error(`build-sys-node cannot find xdg-open`);
+    throw new Error(`cannot find xdg-open`);
   }
-  const xdgOpenDestPath = path.join(__dirname, '..', 'dist', 'sys', 'node', 'xdg-open');
+  const xdgOpenDestPath = path.join(DIST_DIR, 'xdg-open');
   await fs.copy(xdgOpenSrcPath[0], xdgOpenDestPath);
 }
 
@@ -176,22 +190,20 @@ async function copyXdgOpen() {
 async function copyOpenInEditor() {
   // open-in-editor's visualstudio.vbs file
   const visualstudioVbsSrc = path.join(__dirname, '..', 'node_modules', 'open-in-editor', 'lib', 'editors', 'visualstudio.vbs');
-  const visualstudioVbsDesc = path.join(__dirname, '..', 'dist', 'sys', 'node', 'visualstudio.vbs');
+  const visualstudioVbsDesc = path.join(DIST_DIR, 'visualstudio.vbs');
   await fs.copy(visualstudioVbsSrc, visualstudioVbsDesc);
 }
 
 
-run(async () => {
+(async () => {
   await Promise.all([
     bundleExternal('graceful-fs.js'),
     bundleExternal('node-fetch.js'),
     bundleExternal('open-in-editor.js'),
-    bundleExternal('sys-worker.js'),
+    bundleExternal('rollup-plugins.js'),
     bundleExternal('websocket.js'),
     bundleNodeSysMain(),
     copyXdgOpen(),
     copyOpenInEditor()
   ]);
-
-  await fs.remove(TRANSPILED_DIR);
-});
+})();

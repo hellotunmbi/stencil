@@ -41,6 +41,7 @@ export class CompilerContext implements d.CompilerCtx {
   tsService: d.TsService = null;
   cachedGlobalStyle: string;
   styleModeNames = new Set<string>();
+  rollupCache = new Map();
 
   constructor(config: d.Config) {
     const cacheFs = (config.enableCache && config.sys.fs != null) ? new InMemoryFileSystem(config.sys.fs, config.sys.path) : null;

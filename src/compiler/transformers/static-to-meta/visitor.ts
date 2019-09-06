@@ -7,25 +7,24 @@ import { parseStringLiteral } from './string-literal';
 import ts from 'typescript';
 
 
-export const convertStaticToMeta = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx: d.BuildCtx, typeChecker: ts.TypeChecker, collection: d.CollectionCompilerMeta, transformOpts: d.TransformOptions): ts.TransformerFactory<ts.SourceFile> => {
+export const convertStaticToMeta = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx: d.BuildCtx, typeChecker: ts.TypeChecker, collection: d.CollectionCompilerMeta): ts.TransformerFactory<ts.SourceFile> => {
 
-  return transformCtx => {
+  return () => {
 
     let dirPath: string;
     let moduleFile: d.Module;
-    const fileCmpNodes: ts.ClassDeclaration[] = [];
 
-    const visitNode = (node: ts.Node): ts.VisitResult<ts.Node> => {
+    const visitNode = (node: ts.Node) => {
       if (ts.isClassDeclaration(node)) {
-        return parseStaticComponentMeta(config, compilerCtx, transformCtx, typeChecker, node, moduleFile, compilerCtx.nodeMap, transformOpts, fileCmpNodes);
+        parseStaticComponentMeta(config, compilerCtx, typeChecker, node, moduleFile, compilerCtx.nodeMap);
       } else if (ts.isImportDeclaration(node)) {
-        return parseImport(config, compilerCtx, buildCtx, moduleFile, dirPath, node);
+        parseImport(config, compilerCtx, buildCtx, moduleFile, dirPath, node);
       } else if (ts.isCallExpression(node)) {
         parseCallExpression(moduleFile, node);
       } else if (ts.isStringLiteral(node)) {
         parseStringLiteral(moduleFile, node);
       }
-      return ts.visitEachChild(node, visitNode, transformCtx);
+      node.forEachChild(visitNode);
     };
 
     return tsSourceFile => {
@@ -42,7 +41,8 @@ export const convertStaticToMeta = (config: d.Config, compilerCtx: d.CompilerCtx
         moduleFile.collectionName = null;
       }
 
-      return visitNode(tsSourceFile) as ts.SourceFile;
+      visitNode(tsSourceFile);
+      return tsSourceFile;
     };
   };
 };

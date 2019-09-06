@@ -1,10 +1,10 @@
+import * as d from '../../declarations';
 import { Plugin, TransformResult } from 'rollup';
-import ts from 'typescript';
 
 
-export const typescriptPlugin = (outputName: string, tsBuilder: ts.EmitAndSemanticDiagnosticsBuilderProgram, customTransformers: ts.CustomTransformers): Plugin => {
+export const typescriptPlugin = (bundleOpts: d.BundleOptions) => {
   const plugin: Plugin = {
-    name: outputName + 'TypescriptPlugin',
+    name: `${bundleOpts.id}TypescriptPlugin`,
 
     transform(code, id) {
       if (!id.endsWith('.tsx') && !id.endsWith('.ts')) {
@@ -16,9 +16,9 @@ export const typescriptPlugin = (outputName: string, tsBuilder: ts.EmitAndSemant
         map: null
       };
 
-      const tsSourceFile = tsBuilder.getSourceFile(id);
+      const tsSourceFile = bundleOpts.tsBuilder.getSourceFile(id);
 
-      tsBuilder.emit(tsSourceFile,
+      bundleOpts.tsBuilder.emit(tsSourceFile,
         (filePath, data) => {
           if (filePath.endsWith('.js')) {
             transformResult.code = data;
@@ -29,7 +29,7 @@ export const typescriptPlugin = (outputName: string, tsBuilder: ts.EmitAndSemant
         },
         undefined,
         undefined,
-        customTransformers
+        bundleOpts.customTransformers
       );
 
       return transformResult;

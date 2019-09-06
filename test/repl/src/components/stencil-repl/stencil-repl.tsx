@@ -1,6 +1,6 @@
 import { Component, Host, h, Prop, State, Listen } from '@stencil/core';
 import * as d from '../../../../../dist/declarations';
-import { createCompiler, validateConfig } from '../../../../../compiler/stencil_next.esm';
+import { createCompiler, path, validateConfig } from '../../../../../compiler/stencil_next.esm';
 
 
 @Component({
@@ -12,18 +12,61 @@ export class StencilRepl {
 
   @Prop() appName: string = 'Stencil App';
   @Prop() inputs: InputFile[] = [];
+  @Prop() stencilUrl: string;
 
   @State() outputs: OutputFile[] = [];
+  @State() selectedTarget = 'collection-next';
 
-  compiler: d.CompilerCore;
+  compiler: d.CompilerNext;
 
-  async componentDidLoad() {
+  async loadCompiler() {
+    if (this.compiler) {
+      await this.compiler.destroy();
+    }
+
     const userConfig: d.Config = {
       outputTargets: [
         {
-          type: 'experimental-dist-module',
-          dir: 'dist'
+          type: this.selectedTarget as any
         }
+      ],
+      plugins: [
+        (() => {
+          if (!this.stencilUrl) {
+            return null;
+          }
+          const fetchText = new Map<string, string>();
+          return {
+            resolveId: async (importee, importer) => {
+              if (importee.includes('@stencil') || (importer && importer.includes('@stencil'))) {
+                if (importee.startsWith('@stencil')) {
+                  importee = this.stencilUrl + importee;
+                }
+                if (importer && !path.isAbsolute(importee)) {
+                  const importerDir = path.dirname(importer);
+                  importee = path.resolve(importerDir, importee);
+                }
+                if (importee === '/@stencil/core/internal/client') {
+                  importee = '/@stencil/core/internal/client/index';
+                }
+                if (!importee.endsWith('.mjs')) {
+                  importee += '.mjs';
+                }
+                if (!fetchText.has(importee)) {
+                  const rsp = await fetch(importee);
+                  const text = await rsp.text();
+                  fetchText.set(importee, text);
+                }
+                return importee;
+              }
+            },
+            load: (id) => {
+              if (fetchText.has(id)) {
+                return fetchText.get(id);
+              }
+            }
+          }
+        })()
       ]
     };
 
@@ -34,22 +77,21 @@ export class StencilRepl {
 
     const watcher = await this.compiler.createWatcher();
 
+    this.compiler.sys.mkdirSync('/src');
     this.inputs.forEach(input => {
       this.compiler.sys.writeFileSync(input.name, input.code);
     });
 
     watcher.on('buildFinish', buildResults => {
-      const outputTarget = buildResults.outputs.find(o => o.type === 'experimental-dist-module');
-      if (outputTarget) {
-        this.outputs = outputTarget.files.map(fileName => {
-          const code = this.compiler.sys.readFileSync(fileName);
-          const outputFile: OutputFile = {
+      this.outputs = [];
+      buildResults.outputs.forEach(output => {
+        output.files.forEach(fileName => {
+          this.outputs.push({
             name: fileName,
-            code
-          };
-          return outputFile;
+            code: this.compiler.sys.readFileSync(fileName)
+          });
         });
-      }
+      });
     });
 
     await watcher.start();
@@ -58,7 +100,7 @@ export class StencilRepl {
   @Listen('fileAdd')
   async fileAdd(ev: any) {
     const filePath = (ev.detail as InputFile).name;
-    console.log('fileAdd', filePath);
+    console.log('fileAdd:', filePath);
     const code = (ev.detail as InputFile).code;
     this.compiler.sys.writeFileSync(filePath, code);
     this.inputs = [
@@ -70,7 +112,7 @@ export class StencilRepl {
   @Listen('fileUpdate')
   async fileUpdate(ev: any) {
     const filePath = (ev.detail as InputFile).name;
-    console.log('fileUpdate',filePath);
+    console.log('fileUpdate:',filePath);
     const code = (ev.detail as InputFile).code;
     this.compiler.sys.writeFileSync(filePath, code);
     const input = this.inputs.find(i => i.name === filePath);
@@ -81,9 +123,20 @@ export class StencilRepl {
   @Listen('fileDelete')
   async fileDelete(ev: any) {
     const filePath = (ev.detail as InputFile).name;
-    console.log('fileDelete', filePath);
+    console.log('fileDelete:', filePath);
     this.compiler.sys.unlinkSync(filePath);
     this.inputs = this.inputs.filter(i => i.name !== filePath);
+  }
+
+  @Listen('targetUpdate')
+  async targetUpdate(ev: any) {
+    console.log('targetUpdate:', ev.detail);
+    this.selectedTarget = ev.detail;
+    await this.loadCompiler();
+  }
+
+  async componentDidLoad() {
+    await this.loadCompiler();
   }
 
   render() {
@@ -92,7 +145,7 @@ export class StencilRepl {
         <repl-header appName={this.appName}></repl-header>
         <repl-viewport>
           <repl-inputs slot="left" inputs={this.inputs}/>
-          <repl-outputs slot="right" outputs={this.outputs}/>
+          <repl-outputs slot="right" outputs={this.outputs} selectedTarget={this.selectedTarget}/>
         </repl-viewport>
       </Host>
     );

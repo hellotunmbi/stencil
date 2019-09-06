@@ -3,11 +3,11 @@ import { InputFile } from '../stencil-repl/stencil-repl';
 
 
 @Component({
-  tag: 'repl-input',
-  styleUrl: 'repl-input.css',
+  tag: 'repl-input-file',
+  styleUrl: 'repl-input-file.css',
   shadow: true
 })
-export class ReplInput {
+export class ReplInputFile {
 
   @Prop() name: string;
   @Prop() code: string

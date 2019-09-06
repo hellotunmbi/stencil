@@ -1,5 +1,6 @@
 import * as d from '../../declarations';
 import { dependencies } from '../dependencies';
+import { IS_DOM_ENV, IS_NODE_ENV, IS_WEB_WORKER_ENV } from './environment';
 import { normalizePath } from '@utils';
 import path from 'path';
 import ts from 'typescript';
@@ -14,7 +15,7 @@ export const initTypescript = async (config: d.Config, sys: d.CompilerSystem) =>
     ts.sys = createTsSys(sys);
   }
 
-  if (typeof globalThis.ts !== 'undefined' && !globalThis.ts.sys) {
+  if (globalThis.ts && !globalThis.ts.sys) {
     globalThis.ts.sys = ts.sys;
   }
 
@@ -28,7 +29,7 @@ const getTs = async () => {
     Object.assign(ts, globalThis.ts);
     (ts as any).__typescript = 'globalThis';
 
-  } else if (typeof global !== 'undefined' && typeof require === 'function') {
+  } else if (IS_NODE_ENV) {
     // NodeJS
     Object.assign(ts, require('typescript'));
     (ts as any).__typescript = 'node';
@@ -36,13 +37,13 @@ const getTs = async () => {
   } else {
     const dep = dependencies.find(dep => dep.name === 'typescript');
 
-    if (typeof self !== 'undefined' && (self as any).importScripts) {
+    if (IS_WEB_WORKER_ENV) {
       // browser web worker
       (self as any).importScripts(dep.url);
       Object.assign(ts, globalThis.ts);
       (ts as any).__typescript = 'webworker';
 
-    } else if (typeof document !== 'undefined') {
+    } else if (IS_DOM_ENV) {
       // browser main thread
       await new Promise((resolve, reject) => {
         const tsScript = document.createElement('script');
@@ -64,6 +65,26 @@ const getTs = async () => {
 
 
 const createTsSys = (stencilSys: d.CompilerSystem) => {
+
+  const visitDirectory = (matchingPaths: Set<string>, p: string, extensions: ReadonlyArray<string>) => {
+    const dirItems = stencilSys.readdirSync(p);
+
+    dirItems.forEach(dirItem => {
+      if (Array.isArray(extensions) && extensions.length > 0) {
+        if (extensions.some(ext => dirItem.endsWith(ext))) {
+          matchingPaths.add(dirItem);
+        }
+      } else {
+        matchingPaths.add(dirItem);
+      }
+
+      const s = stencilSys.statSync(dirItem);
+      if (s.isDirectory) {
+        visitDirectory(matchingPaths, dirItem, extensions);
+      }
+    });
+  };
+
   const tsSys: ts.System = {
     args: [],
     newLine: '\n',
@@ -72,20 +93,20 @@ const createTsSys = (stencilSys: d.CompilerSystem) => {
       stencilSys.mkdirSync(p);
     },
     directoryExists(p) {
-      try {
-        const s = stencilSys.statSync(p);
+      const s = stencilSys.statSync(p);
+      if (s) {
         return s.isDirectory();
-      } catch (e) {}
+      }
       return false;
     },
     exit(exitCode) {
       stencilSys.exit(exitCode);
     },
     fileExists(p) {
-      try {
-        const s = stencilSys.statSync(p);
+      const s = stencilSys.statSync(p);
+      if (s) {
         return s.isFile();
-      } catch (e) {}
+      }
       return false;
     },
     getExecutingFilePath() {
@@ -95,26 +116,16 @@ const createTsSys = (stencilSys: d.CompilerSystem) => {
       return stencilSys.getCurrentDirectory();
     },
     getDirectories(p) {
-      try {
-        const items = stencilSys.readdirSync(p);
-        return items.filter(item => {
-          const itemPath = path.join(p, item);
-          const s = stencilSys.statSync(itemPath);
-          return s.isDirectory();
-        }).map(item => {
-          return path.join(p, item);
-        });
-      } catch (e) {}
-      return [];
+      const items = stencilSys.readdirSync(p);
+      return items.filter(itemPath => {
+        const s = stencilSys.statSync(itemPath);
+        return s.isDirectory();
+      });
     },
-    readDirectory(p, _extensions, _exclude, _include, _depth) {
-      try {
-        const items = stencilSys.readdirSync(p);
-        return items.map(item => {
-          return path.join(p, item);
-        });
-      } catch (e) {}
-      return [];
+    readDirectory(p, extensions, _exclude, _include, _depth) {
+      const matchingPaths = new Set<string>();
+      visitDirectory(matchingPaths, p, extensions);
+      return Array.from(matchingPaths);
     },
     readFile(p, encoding) {
       return stencilSys.readFileSync(p, encoding);
@@ -122,8 +133,18 @@ const createTsSys = (stencilSys: d.CompilerSystem) => {
     resolvePath(p) {
       return path.resolve(p);
     },
+    watchDirectory(p, cb) {
+      const watcher = stencilSys.watchDirectory(p, (filePath) => {
+        cb(filePath);
+      });
+      return {
+        close() {
+          watcher.close();
+        }
+      };
+    },
     watchFile(p, cb) {
-      const fileWatcher = stencilSys.watchFile(p, (filePath, eventKind) => {
+      const watcher = stencilSys.watchFile(p, (filePath, eventKind) => {
         if (eventKind === 'fileAdd') {
           cb(filePath, ts.FileWatcherEventKind.Created);
         } else if (eventKind === 'fileUpdate') {
@@ -134,7 +155,7 @@ const createTsSys = (stencilSys: d.CompilerSystem) => {
       });
       return {
         close() {
-          fileWatcher.close();
+          watcher.close();
         }
       };
     },
@@ -157,16 +178,7 @@ const getTsConfigPath = (config: d.Config) => {
     return normalizePath(config.tsconfig);
   }
 
-  if (typeof ts !== 'undefined' && ts.findConfigFile) {
-    const tsconfig = ts.findConfigFile(config.rootDir, ts.sys.fileExists);
-    if (typeof tsconfig === 'string') {
-      return normalizePath(tsconfig);
-    }
-  }
-
-  return null;
+  return ts.findConfigFile(config.rootDir, ts.sys.fileExists);
 };
-
-export default ts;
 
 declare var globalThis: any;

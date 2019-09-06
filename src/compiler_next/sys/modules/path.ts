@@ -1,8 +1,9 @@
 import pathBrowserify from 'path-browserify';
+import { IS_NODE_ENV } from '../environment';
 
 const path: any = {};
 
-if (typeof global !== 'undefined' && typeof require === 'function') {
+if (IS_NODE_ENV) {
   Object.assign(path, require('path'));
   path.__path = 'node';
 

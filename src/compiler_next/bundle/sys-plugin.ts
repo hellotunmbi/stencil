@@ -4,11 +4,16 @@ import { Plugin } from 'rollup';
 import path from 'path';
 
 
-export const sysPlugin = (fs: d.InMemoryFileSystem): Plugin => {
+export const sysPlugin = (fs: d.InMemoryFileSystem) => {
   const plugin: Plugin = {
     name: 'sysPlugin',
 
     async resolveId(importee, importer) {
+      if (/\0/.test(importee)) {
+        // ignore IDs with null character, these belong to other plugins
+        return null;
+      }
+
       if (importer) {
         const importerDir = path.dirname(importer);
         const resolvedPath = normalizePath(path.resolve(importerDir, importee));
@@ -23,7 +28,19 @@ export const sysPlugin = (fs: d.InMemoryFileSystem): Plugin => {
 
         return null;
       }
-      return normalizePath(importee);
+
+      if (path.isAbsolute(importee)) {
+        importee = normalizePath(importee);
+        for (const ext of EXTS) {
+          const p = importee + ext;
+          const hasAccess = await fs.access(p);
+          if (hasAccess) {
+            return p;
+          }
+        }
+      }
+
+      return null;
     },
 
     load(id) {
@@ -34,10 +51,11 @@ export const sysPlugin = (fs: d.InMemoryFileSystem): Plugin => {
   return plugin;
 };
 
+
 const EXTS = [
   '',
-  '.ts',
   '.tsx',
-  '.js',
-  '.mjs'
+  '.ts',
+  '.mjs',
+  '.js'
 ];

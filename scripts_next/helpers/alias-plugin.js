@@ -8,6 +8,9 @@ export default {
     if (importee === '@mock-doc') {
       return 'dist-ts/mock-doc/index.js'
     }
+    if (importee === '@rollup-plugins') {
+      return 'dist-ts/rollup-plugins.js'
+    }
     if (importee === '@runtime') {
       return 'dist-ts/runtime/index.js'
     }

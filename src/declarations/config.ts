@@ -184,6 +184,8 @@ export interface StencilConfig {
   validateTypes?: boolean;
   watchIgnoredRegex?: RegExp;
   excludeUnusedDependencies?: boolean;
+
+  stencilCoreResolvedId?: string;
 }
 
 export interface Config extends StencilConfig {

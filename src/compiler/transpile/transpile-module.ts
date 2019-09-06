@@ -70,7 +70,7 @@ export const transpileModule = (config: d.Config, input: string, transformOpts: 
   const typeChecker = program.getTypeChecker();
 
   const after: ts.TransformerFactory<ts.SourceFile>[] = [
-    convertStaticToMeta(config, compilerCtx, buildCtx, typeChecker, null, transformOpts)
+    convertStaticToMeta(config, compilerCtx, buildCtx, typeChecker, null)
   ];
 
   if (transformOpts.componentExport === 'customelement' || transformOpts.componentExport === 'native') {

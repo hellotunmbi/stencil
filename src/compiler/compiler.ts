@@ -158,8 +158,6 @@ export class Compiler implements d.Compiler {
     if (devServer != null) {
       // get the browser url to be logged out at the end of the build
       this.config.devServer.browserUrl = devServer.browserUrl;
-
-      this.config.logger.debug(`dev server started: ${devServer.browserUrl}`);
     }
 
     return devServer;

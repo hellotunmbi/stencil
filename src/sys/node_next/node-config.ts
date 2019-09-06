@@ -1,6 +1,6 @@
 import * as d from '../../declarations';
 import { normalizePath } from '@utils';
-import { parseFlags } from './parse-flags';
+import { parseFlags } from '../../cli_next/sys/parse-flags';
 import { validateConfig } from '@compiler';
 import exit from 'exit';
 import fs from 'fs';
@@ -29,11 +29,6 @@ export function getConfig(prcs: NodeJS.Process, sys: d.CompilerSystem, logger: d
     }
 
     config.flags = flags;
-
-    // tmp old way
-    config.sys = {
-      path
-    };
 
     const validated = validateConfig(config);
     if (validated.diagnostics.length > 0) {
@@ -102,16 +97,13 @@ export function loadConfigFile(fs: d.FileSystem, configPath: string, cwd: string
     }
     config = configFileData.config;
     config.configPath = configPath;
-
-    if (configPath) {
-      config.rootDir = normalizePath(path.dirname(configPath));
-    }
+    config.rootDir = normalizePath(path.dirname(configPath));
 
   } else {
     // no stencil.config.ts or .js file, which is fine
     // #0CJS
     config = {
-      rootDir: cwd
+      rootDir: normalizePath(cwd)
     };
   }
 

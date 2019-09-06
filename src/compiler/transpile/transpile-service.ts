@@ -129,7 +129,7 @@ const buildTsService = async (config: d.Config, compilerCtx: d.CompilerCtx, buil
           updateStencilCoreImports(transformOpts.coreImportPath)
         ],
         after: [
-          convertStaticToMeta(config, transpileCtx.compilerCtx, transpileCtx.buildCtx, typeChecker, null, transformOpts)
+          convertStaticToMeta(config, transpileCtx.compilerCtx, transpileCtx.buildCtx, typeChecker, null)
         ]
       };
     }

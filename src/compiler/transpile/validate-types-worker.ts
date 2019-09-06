@@ -1,7 +1,7 @@
 import * as d from '../../declarations';
 import { loadTypeScriptDiagnostics, normalizePath } from '@utils';
 import { removeCollectionImports } from '../transformers/remove-collection-imports';
-import { removeStencilDecorators, removeStencilImports } from '../transformers/validate-types-transform';
+import { removeStencilDecorators } from '../transformers/validate-types-transform';
 import { updateStencilTypesImports } from '../types/stencil-types';
 import path from 'path';
 import ts from 'typescript';
@@ -69,7 +69,7 @@ export function validateTypesWorker(workerCtx: d.WorkerContext, emitDtsFiles: bo
       removeStencilDecorators()
     ],
     after: [
-      removeStencilImports(),
+      // removeStencilImports(),
       removeCollectionImports(compilerCtx)
     ]
   });

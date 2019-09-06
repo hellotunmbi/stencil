@@ -8,7 +8,7 @@ export const config: Config = {
       serviceWorker: null
     },
     {
-      type: 'experimental-dist-module',
+      type: 'experimental-module',
       dir: 'public',
       empty: false
     }

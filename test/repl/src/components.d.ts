@@ -18,7 +18,7 @@ export namespace Components {
   interface ReplHeader {
     'appName': string;
   }
-  interface ReplInput {
+  interface ReplInputFile {
     'code': string;
     'isSelected': boolean;
     'name': string;
@@ -31,13 +31,20 @@ export namespace Components {
     'inputs': InputFile[];
     'selectedName': string;
   }
+  interface ReplOutputFile {
+    'code': string;
+    'isSelected': boolean;
+    'name': string;
+  }
   interface ReplOutputs {
     'outputs': OutputFile[];
+    'selectedTarget': string;
   }
   interface ReplViewport {}
   interface StencilRepl {
     'appName': string;
     'inputs': InputFile[];
+    'stencilUrl': string;
   }
 }
 
@@ -50,10 +57,10 @@ declare global {
     new (): HTMLReplHeaderElement;
   };
 
-  interface HTMLReplInputElement extends Components.ReplInput, HTMLStencilElement {}
-  var HTMLReplInputElement: {
-    prototype: HTMLReplInputElement;
-    new (): HTMLReplInputElement;
+  interface HTMLReplInputFileElement extends Components.ReplInputFile, HTMLStencilElement {}
+  var HTMLReplInputFileElement: {
+    prototype: HTMLReplInputFileElement;
+    new (): HTMLReplInputFileElement;
   };
 
   interface HTMLReplInputSelectionElement extends Components.ReplInputSelection, HTMLStencilElement {}
@@ -66,6 +73,12 @@ declare global {
   var HTMLReplInputsElement: {
     prototype: HTMLReplInputsElement;
     new (): HTMLReplInputsElement;
+  };
+
+  interface HTMLReplOutputFileElement extends Components.ReplOutputFile, HTMLStencilElement {}
+  var HTMLReplOutputFileElement: {
+    prototype: HTMLReplOutputFileElement;
+    new (): HTMLReplOutputFileElement;
   };
 
   interface HTMLReplOutputsElement extends Components.ReplOutputs, HTMLStencilElement {}
@@ -87,9 +100,10 @@ declare global {
   };
   interface HTMLElementTagNameMap {
     'repl-header': HTMLReplHeaderElement;
-    'repl-input': HTMLReplInputElement;
+    'repl-input-file': HTMLReplInputFileElement;
     'repl-input-selection': HTMLReplInputSelectionElement;
     'repl-inputs': HTMLReplInputsElement;
+    'repl-output-file': HTMLReplOutputFileElement;
     'repl-outputs': HTMLReplOutputsElement;
     'repl-viewport': HTMLReplViewportElement;
     'stencil-repl': HTMLStencilReplElement;
@@ -100,7 +114,7 @@ declare namespace LocalJSX {
   interface ReplHeader extends JSXBase.HTMLAttributes<HTMLReplHeaderElement> {
     'appName'?: string;
   }
-  interface ReplInput extends JSXBase.HTMLAttributes<HTMLReplInputElement> {
+  interface ReplInputFile extends JSXBase.HTMLAttributes<HTMLReplInputFileElement> {
     'code'?: string;
     'isSelected'?: boolean;
     'name'?: string;
@@ -116,20 +130,29 @@ declare namespace LocalJSX {
     'inputs'?: InputFile[];
     'selectedName'?: string;
   }
+  interface ReplOutputFile extends JSXBase.HTMLAttributes<HTMLReplOutputFileElement> {
+    'code'?: string;
+    'isSelected'?: boolean;
+    'name'?: string;
+  }
   interface ReplOutputs extends JSXBase.HTMLAttributes<HTMLReplOutputsElement> {
+    'onTargetUpdate'?: (event: CustomEvent<string>) => void;
     'outputs'?: OutputFile[];
+    'selectedTarget'?: string;
   }
   interface ReplViewport extends JSXBase.HTMLAttributes<HTMLReplViewportElement> {}
   interface StencilRepl extends JSXBase.HTMLAttributes<HTMLStencilReplElement> {
     'appName'?: string;
     'inputs'?: InputFile[];
+    'stencilUrl'?: string;
   }
 
   interface IntrinsicElements {
     'repl-header': ReplHeader;
-    'repl-input': ReplInput;
+    'repl-input-file': ReplInputFile;
     'repl-input-selection': ReplInputSelection;
     'repl-inputs': ReplInputs;
+    'repl-output-file': ReplOutputFile;
     'repl-outputs': ReplOutputs;
     'repl-viewport': ReplViewport;
     'stencil-repl': StencilRepl;

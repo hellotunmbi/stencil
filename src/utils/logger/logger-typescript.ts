@@ -71,7 +71,6 @@ export const augmentDiagnosticWithNode = (config: d.Config, d: d.Diagnostic, nod
  * Ok, so formatting overkill, we know. But whatever, it makes for great
  * error reporting within a terminal. So, yeah, let's code it up, shall we?
  */
-
 export const loadTypeScriptDiagnostics = (tsDiagnostics: readonly ts.Diagnostic[]) => {
   const diagnostics: d.Diagnostic[] = [];
   const maxErrors = Math.min(tsDiagnostics.length, 50);
@@ -85,7 +84,6 @@ export const loadTypeScriptDiagnostics = (tsDiagnostics: readonly ts.Diagnostic[
 
 
 export const loadTypeScriptDiagnostic = (tsDiagnostic: ts.Diagnostic) => {
-
   const d: d.Diagnostic = {
     level: 'warn',
     type: 'typescript',
@@ -100,6 +98,8 @@ export const loadTypeScriptDiagnostic = (tsDiagnostic: ts.Diagnostic) => {
 
   if (tsDiagnostic.category === 1) {
     d.level = 'error';
+  } else if (tsDiagnostic.category === 2) {
+    d.level = 'info';
   }
 
   if (tsDiagnostic.file) {
@@ -158,33 +158,37 @@ export const loadTypeScriptDiagnostic = (tsDiagnostic: ts.Diagnostic) => {
 
 
 const formatMessageText = (tsDiagnostic: ts.Diagnostic) => {
-  let diagnosticChain = tsDiagnostic.messageText;
+  let msg = flattenDiagnosticMessageText(tsDiagnostic.messageText);
 
-  if (typeof diagnosticChain === 'string') {
-    return diagnosticChain;
-  }
-
-  const ignoreCodes: number[] = [];
-  const isStencilConfig = tsDiagnostic.file.fileName.includes('stencil.config');
-  if (isStencilConfig) {
-    ignoreCodes.push(2322);
-  }
-
-  let result = '';
-
-  while (diagnosticChain && (diagnosticChain as ts.DiagnosticMessageChain).code) {
-    if (!ignoreCodes.includes((diagnosticChain as ts.DiagnosticMessageChain).code)) {
-      result += (diagnosticChain as ts.DiagnosticMessageChain).messageText + ' ';
+  if (tsDiagnostic.file) {
+    const ignoreCodes: number[] = [];
+    const isStencilConfig = tsDiagnostic.file.fileName.includes('stencil.config');
+    if (isStencilConfig) {
+      ignoreCodes.push(2322);
     }
 
-    diagnosticChain = (diagnosticChain as ts.DiagnosticMessageChain).next as any;
+    if (isStencilConfig) {
+      msg = msg.replace(`type 'StencilConfig'`, `Stencil Config`);
+      msg = msg.replace(`Object literal may only specify known properties, but `, ``);
+      msg = msg.replace(`Object literal may only specify known properties, and `, ``);
+    }
   }
 
-  if (isStencilConfig) {
-    result = result.replace(`type 'StencilConfig'`, `Stencil Config`);
-    result = result.replace(`Object literal may only specify known properties, but `, ``);
-    result = result.replace(`Object literal may only specify known properties, and `, ``);
+  return msg.trim();
+};
+
+const flattenDiagnosticMessageText = (diag: any) => {
+  if (typeof diag === 'string') {
+    return diag;
+  } else if (diag == null) {
+    return '';
   }
 
-  return result.trim();
+  let msg = diag.messageText;
+  if (diag.next) {
+    for (let i = 0, a = diag.next; i < a.length; i++) {
+      msg += flattenDiagnosticMessageText(a[i]);
+    }
+  }
+  return msg;
 };

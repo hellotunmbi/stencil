@@ -1,5 +1,5 @@
 import * as d from '../declarations';
-import { getConfig, getCwd, getLogger, getSys } from './sys';
+import { getConfig, getCwd, getLogger, getSys } from '@sys-node';
 import { shouldIgnoreError } from '@utils';
 import { runTask } from './tasks';
 import exit from 'exit';

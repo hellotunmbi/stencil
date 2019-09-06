@@ -1,11 +1,13 @@
 import * as d from '.';
+import { OutputOptions } from 'rollup';
+import ts from 'typescript';
 
 
-export interface CompilerCore {
+export interface CompilerNext {
   build(): Promise<d.CompilerBuildResults>;
-  config: d.Config;
-  sys: d.CompilerSystem;
   createWatcher(): Promise<d.CompilerWatcher>;
+  destroy(): Promise<void>;
+  sys: d.CompilerSystem;
 }
 
 export interface CompilerSystem {
@@ -43,12 +45,19 @@ export interface CompilerSystem {
   /**
    * Returns undefined if file is not found. Does not throw.
    */
-  readFile(p: string, format?: string): Promise<string>;
+  readFile(p: string, encoding?: string): Promise<string>;
   /**
    * Returns undefined if file is not found. Does not throw.
    */
-  readFileSync(p: string, format?: string): string;
-  realpath(p: string): string;
+  readFileSync(p: string, encoding?: string): string;
+  /**
+   * Returns undefined if there's an error. Does not throw.
+   */
+  realpath(p: string): Promise<string>;
+  /**
+   * Returns undefined if there's an error. Does not throw.
+   */
+  realpathSync(p: string): string;
   resolvePath(p: string): string;
   /**
    * Always returns a boolean if the directory was removed or not. Does not throw.
@@ -74,7 +83,9 @@ export interface CompilerSystem {
    * Always returns a boolean if the file was removed or not. Does not throw.
    */
   unlinkSync(p: string): boolean;
-  watchFile(path: string, callback: CompilerFileWatcherCallback): CompilerFileWatcher;
+
+  watchDirectory(p: string, callback: CompilerFileWatcherCallback): CompilerFileWatcher;
+  watchFile(p: string, callback: CompilerFileWatcherCallback): CompilerFileWatcher;
   /**
    * How many milliseconds to wait after a change before calling watch callbacks.
    */
@@ -108,6 +119,17 @@ export interface CompilerSystemMakeDirectoryOptions {
    * @default 0o777.
    */
   mode?: number;
+}
+
+
+export interface BundleOptions {
+  conditionals: d.Build;
+  id: string;
+  customTransformers: ts.CustomTransformers;
+  inputs: {[entryKey: string]: string};
+  outputOptions: OutputOptions;
+  outputTargets: d.OutputTargetBaseNext[];
+  tsBuilder: ts.BuilderProgram;
 }
 
 

@@ -1,6 +1,6 @@
 import * as d from '../../declarations';
 import color from 'ansi-colors';
-import fs from 'graceful-fs';
+import fs from 'fs';
 import path from 'path';
 
 

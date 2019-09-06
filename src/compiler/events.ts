@@ -57,9 +57,14 @@ export const buildEvents = (): d.BuildEvents => {
     }
   };
 
+  const unsubscribeAll = () => {
+    evCallbacks.length = 0;
+  };
+
   return {
     emit,
-    on
+    on,
+    unsubscribeAll
   };
 };
 

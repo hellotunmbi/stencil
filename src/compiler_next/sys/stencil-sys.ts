@@ -15,8 +15,8 @@ const createStencilSys = (logger: d.Logger) => {
   const items = new Map<string, FsItem>();
 
   const normalize = (p: string) => {
-    if (p === '/') {
-      return p;
+    if (p === '/' || p === '') {
+      return '/';
     }
     const dir = path.dirname(p);
     const base = path.basename(p);
@@ -27,7 +27,9 @@ const createStencilSys = (logger: d.Logger) => {
   };
 
   const accessSync = (p: string) => {
-    return items.has(normalize(p));
+    p = normalize(p);
+    const item = items.get(p);
+    return !!(item && (item.isDirectory || item.isFile));
   };
 
   const access = async (p: string) => {
@@ -52,14 +54,21 @@ const createStencilSys = (logger: d.Logger) => {
 
   const mkdirSync = (p: string, _opts?: d.CompilerSystemMakeDirectoryOptions) => {
     p = normalize(p);
-    items.set(p, {
-      basename: path.basename(p),
-      dirname: path.dirname(p),
-      isDirectory: true,
-      isFile: false,
-      fileWatcher: null,
-      data: null
-    });
+    const item = items.get(p);
+    if (!item) {
+      items.set(p, {
+        basename: path.basename(p),
+        dirname: path.dirname(p),
+        isDirectory: true,
+        isFile: false,
+        watcherCallback: null,
+        data: undefined
+      });
+    } else {
+      item.isDirectory = true;
+      item.isFile = false;
+    }
+    emitDirectoryWatch(p, new Set());
     return true;
   };
 
@@ -91,19 +100,23 @@ const createStencilSys = (logger: d.Logger) => {
 
   const readFileSync = (p: string) => {
     p = normalize(p);
-    const file = items.get(p);
-    if (file && file.isFile) {
-      return file.data;
+    const item = items.get(p);
+    if (item && item.isFile) {
+      return item.data;
     }
-    return null;
+    return undefined;
   };
 
   const readFile = async (p: string) => {
     return readFileSync(p);
   };
 
-  const realpath = (p: string) => {
+  const realpathSync = (p: string) => {
     return normalize(p);
+  };
+
+  const realpath = async (p: string) => {
+    return realpathSync(p);
   };
 
   const resolvePath = (p: string) => {
@@ -114,6 +127,7 @@ const createStencilSys = (logger: d.Logger) => {
   const rmdirSync = (p: string) => {
     p = normalize(p);
     items.delete(p);
+    emitDirectoryWatch(p, new Set());
     return true;
   };
 
@@ -124,16 +138,16 @@ const createStencilSys = (logger: d.Logger) => {
   const statSync = (p: string) => {
     p = normalize(p);
     const item = items.get(p);
-    if (!item) {
-      throw new Error(`stat does not exist: ${p}`);
+    if (item && (item.isDirectory || item.isFile)) {
+      const s: d.CompilerFsStats = {
+        isDirectory: () => item.isDirectory,
+        isFile: () => item.isFile,
+        isSymbolicLink: () => false,
+        size: item.isFile ? item.data.length : 0
+      };
+      return s;
     }
-    const s: d.CompilerFsStats = {
-      isDirectory: () => item.isDirectory,
-      isFile: () => item.isFile,
-      isSymbolicLink: () => false,
-      size: item.isFile ? item.data.length : 0
-    };
-    return s;
+    return undefined;
   };
 
   const stat = async (p: string) => {
@@ -144,10 +158,11 @@ const createStencilSys = (logger: d.Logger) => {
     p = normalize(p);
     const item = items.get(p);
     if (item) {
-      if (item.fileWatcher) {
-        item.fileWatcher(p, 'fileDelete');
+      if (item.watcherCallback) {
+        item.watcherCallback(p, 'fileDelete');
       }
       items.delete(p);
+      emitDirectoryWatch(p, new Set());
     }
     return true;
   };
@@ -156,33 +171,83 @@ const createStencilSys = (logger: d.Logger) => {
     return unlinkSync(p);
   };
 
-  const watchFile = (p: string, fileWatcherCallback: d.CompilerFileWatcherCallback) => {
+  const watchDirectory = (p: string, dirWatcherCallback: d.CompilerFileWatcherCallback) => {
     p = normalize(p);
-
     const item = items.get(p);
-    if (item && item.isFile) {
-      item.fileWatcher = fileWatcherCallback;
+    if (item) {
+      item.isDirectory = true;
+      item.isFile = false;
+      item.watcherCallback = dirWatcherCallback;
+    } else {
+      items.set(p, {
+        basename: path.basename(p),
+        dirname: path.dirname(p),
+        isDirectory: true,
+        isFile: false,
+        watcherCallback: dirWatcherCallback,
+        data: undefined
+      });
     }
 
     return {
       close() {
         const closeItem = items.get(p);
         if (closeItem) {
-          closeItem.fileWatcher = null;
+          closeItem.watcherCallback = null;
         }
       }
     };
   };
 
-  const writeFileSync = (p: string, data: string) => {
+  const watchFile = (p: string, fileWatcherCallback: d.CompilerFileWatcherCallback) => {
     p = normalize(p);
-
     const item = items.get(p);
     if (item) {
-      const hasChanged = item.data !== data;
+      item.isDirectory = false;
+      item.isFile = true;
+      item.watcherCallback = fileWatcherCallback;
+    } else {
+      items.set(p, {
+        basename: path.basename(p),
+        dirname: path.dirname(p),
+        isDirectory: true,
+        isFile: false,
+        watcherCallback: fileWatcherCallback,
+        data: undefined
+      });
+    }
+
+    return {
+      close() {
+        const closeItem = items.get(p);
+        if (closeItem) {
+          closeItem.watcherCallback = null;
+        }
+      }
+    };
+  };
+
+  const emitDirectoryWatch = (p: string, emitted: Set<string>) => {
+    const parentDir = normalize(path.dirname(p));
+    const dirItem = items.get(parentDir);
+
+    if (dirItem && dirItem.isDirectory && dirItem.watcherCallback) {
+      dirItem.watcherCallback(p, null);
+    }
+    if (!emitted.has(parentDir)) {
+      emitted.add(parentDir);
+      emitDirectoryWatch(parentDir, emitted);
+    }
+  };
+
+  const writeFileSync = (p: string, data: string) => {
+    p = normalize(p);
+    const item = items.get(p);
+    if (item) {
+      const shouldEmitUpdate = (item.watcherCallback && item.data !== data);
       item.data = data;
-      if (hasChanged && item.fileWatcher) {
-        item.fileWatcher(p, 'fileUpdate');
+      if (shouldEmitUpdate) {
+        item.watcherCallback(p, 'fileUpdate');
       }
 
     } else {
@@ -191,9 +256,11 @@ const createStencilSys = (logger: d.Logger) => {
         dirname: path.dirname(p),
         isDirectory: false,
         isFile: true,
-        fileWatcher: null,
+        watcherCallback: null,
         data
       });
+
+      emitDirectoryWatch(p, new Set());
     }
     return true;
   };
@@ -221,6 +288,7 @@ const createStencilSys = (logger: d.Logger) => {
     readFile,
     readFileSync,
     realpath,
+    realpathSync,
     resolvePath,
     rmdir,
     rmdirSync,
@@ -228,6 +296,7 @@ const createStencilSys = (logger: d.Logger) => {
     statSync,
     unlink,
     unlinkSync,
+    watchDirectory,
     watchFile,
     writeFile,
     writeFileSync,
@@ -242,5 +311,5 @@ interface FsItem {
   dirname: string;
   isFile: boolean;
   isDirectory: boolean;
-  fileWatcher: d.CompilerFileWatcherCallback;
+  watcherCallback: d.CompilerFileWatcherCallback;
 }

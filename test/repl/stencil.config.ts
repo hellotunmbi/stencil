@@ -9,7 +9,14 @@ export const config: Config = {
     {
       type: 'www',
       serviceWorker: null,
-      baseUrl: 'https://myapp.local/'
+      baseUrl: 'https://myapp.local/',
+      copy: [
+        {
+          src: '../../../internal/',
+          dest: './@stencil/core/internal/',
+          warn: true
+        },
+      ]
     }
   ],
   enableCache: false

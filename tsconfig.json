@@ -40,6 +40,9 @@
       "@platform": [
         "src/client/index.ts"
       ],
+      "@rollup-plugins": [
+        "src/compiler_next/sys/modules/rollup-plugins.ts"
+      ],
       "@runtime": [
         "src/runtime/index.ts"
       ],
@@ -48,6 +51,9 @@
       ],
       "@stencil/core/testing": [
         "src/testing/index.ts"
+      ],
+      "@sys-node": [
+        "src/sys/node_next/index.ts"
       ],
       "@utils": [
         "src/utils/index.ts"
@@ -67,6 +73,7 @@
     "src/dev-server_next/dev-client/index.ts",
     "src/mock-doc/index.ts",
     "src/runtime/index.ts",
+    "src/sys/node_next/index.ts",
     "src/testing/index.ts",
     "src/utils/index.ts"
   ],

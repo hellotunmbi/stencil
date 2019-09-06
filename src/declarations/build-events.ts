@@ -36,6 +36,7 @@ export interface BuildEmitEvents {
 export type BuildOnEventRemove = () => boolean;
 
 export interface BuildEvents extends BuildOnEvents, BuildEmitEvents {
+  unsubscribeAll(): void;
 }
 
 export type CompilerEventFsChange = 'fsChange';

@@ -1,6 +1,6 @@
 import * as d from '../../declarations';
 import { normalizePath } from '@utils';
-import fs from 'graceful-fs';
+import fs from 'fs';
 import path from 'path';
 import ts from 'typescript';
 
@@ -59,10 +59,9 @@ export function getSys(prcs: NodeJS.Process) {
           if (err) {
             resolve([]);
           } else {
-            const paths = files.map(f => {
+            resolve(files.map(f => {
               return normalizePath(path.join(p, f));
-            });
-            resolve(paths);
+            }));
           }
         });
       });
@@ -87,7 +86,17 @@ export function getSys(prcs: NodeJS.Process) {
       return undefined;
     },
     realpath(p) {
-      return normalizePath(p);
+      return new Promise(resolve => {
+        fs.realpath(p, 'utf8', (_, data) => {
+          resolve(data);
+        });
+      });
+    },
+    realpathSync(p) {
+      try {
+        return fs.realpathSync(p, 'utf8');
+      } catch (e) {}
+      return undefined;
     },
     resolvePath(p) {
       return normalizePath(p);
@@ -119,7 +128,7 @@ export function getSys(prcs: NodeJS.Process) {
     },
     statSync(p) {
       try {
-        return fs.statSync(p);
+        return fs.lstatSync(p);
       } catch (e) {}
       return undefined;
     },
@@ -138,8 +147,20 @@ export function getSys(prcs: NodeJS.Process) {
       return false;
     },
     fileWatchTimeout: 80,
+    watchDirectory(p, callback) {
+      const tsFileWatcher = ts.sys.watchDirectory(p, (fileName) => {
+        fileName = normalizePath(fileName);
+        callback(fileName, null);
+      }, true);
+      return {
+        close() {
+          tsFileWatcher.close();
+        }
+      };
+    },
     watchFile(p, callback) {
       const tsFileWatcher = ts.sys.watchFile(p, (fileName, tsEventKind) => {
+        fileName = normalizePath(fileName);
         if (tsEventKind === ts.FileWatcherEventKind.Created) {
           callback(fileName, 'fileAdd');
         } else if (tsEventKind === ts.FileWatcherEventKind.Changed) {
