@@ -3,19 +3,23 @@ import { CompilerContext } from '../compiler/build/compiler-ctx';
 import { createFullBuild } from './build/full-build';
 import { createWatchBuild } from './build/watch-build';
 import { getConfig } from './sys/config';
-import { initFs } from './sys/fs-patch';
-import { initTypescript } from './sys/typescript-patch';
 import { inMemoryFileSystem } from './sys/in-memory-fs';
+import { patchFs } from './sys/fs-patch';
+import { patchTypescript } from './sys/typescript-patch';
+import { preloadModules } from './sys/preload-modules';
 
 
 export const createCompiler = async (config: d.Config) => {
   config = getConfig(config);
+  const sys = config.sys_next;
 
-  initFs(config.sys_next);
-  await initTypescript(config, config.sys_next);
+  patchFs(sys);
+  await patchTypescript(config, sys);
 
   const compilerCtx = new CompilerContext(config);
-  compilerCtx.fs = inMemoryFileSystem(config.sys_next);
+  compilerCtx.fs = inMemoryFileSystem(sys);
+
+  await preloadModules(config, compilerCtx);
 
   let watcher: d.CompilerWatcher = null;
 
@@ -34,7 +38,7 @@ export const createCompiler = async (config: d.Config) => {
         watcher = null;
       }
     },
-    sys: config.sys_next
+    sys
   };
 
   return compiler;

@@ -1,8 +1,11 @@
 import * as d from '../../../declarations';
 
+export interface FsObj {
+  __sys: d.CompilerSystem;
+  [key: string]: any;
+}
 
-const fs: { __sys: d.CompilerSystem, [key: string]: any } = {
-  __fs: 'patched',
+const fs: FsObj = {
   __sys: {} as any
 };
 

@@ -2,7 +2,7 @@ import * as d from '../declarations';
 import { catchError } from '@utils';
 import { getCompileConfig, getCompileOptions, getTransformOptions } from './config/compile-module-options';
 import { getPublicCompilerMeta } from '../compiler/transformers/add-component-meta-static';
-import { initTypescript } from './sys/typescript-patch';
+import { patchTypescript } from './sys/typescript-patch';
 import { transformCssToEsm } from '../compiler/style/css-to-esm';
 import { transpileModule } from '../compiler/transpile/transpile-module';
 
@@ -24,7 +24,7 @@ export const compile = async (code: string, opts: d.CompileOptions = {}): Promis
     r.inputOptions = getCompileOptions(opts, r.inputFilePath);
 
     if (r.inputOptions.type === 'tsx' || r.inputOptions.type === 'ts' || r.inputOptions.type === 'jsx') {
-      initTypescript(config, config.sys_next);
+      patchTypescript(config, config.sys_next);
 
       const transformOpts = getTransformOptions(r.inputOptions);
 

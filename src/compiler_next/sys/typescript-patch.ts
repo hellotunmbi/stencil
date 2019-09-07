@@ -6,7 +6,7 @@ import path from 'path';
 import ts from 'typescript';
 
 
-export const initTypescript = async (config: d.Config, sys: d.CompilerSystem) => {
+export const patchTypescript = async (config: d.Config, sys: d.CompilerSystem) => {
   if (!ts.transform) {
     await getTs();
   }
@@ -27,12 +27,10 @@ const getTs = async () => {
   if (globalThis.ts) {
     // "ts" already on global scope
     Object.assign(ts, globalThis.ts);
-    (ts as any).__typescript = 'globalThis';
 
   } else if (IS_NODE_ENV) {
     // NodeJS
     Object.assign(ts, require('typescript'));
-    (ts as any).__typescript = 'node';
 
   } else {
     const dep = dependencies.find(dep => dep.name === 'typescript');
@@ -41,7 +39,6 @@ const getTs = async () => {
       // browser web worker
       (self as any).importScripts(dep.url);
       Object.assign(ts, globalThis.ts);
-      (ts as any).__typescript = 'webworker';
 
     } else if (IS_DOM_ENV) {
       // browser main thread
@@ -49,9 +46,10 @@ const getTs = async () => {
         const tsScript = document.createElement('script');
         tsScript.src = dep.url;
         tsScript.onload = () => {
-          Object.assign(ts, globalThis.ts);
-          (ts as any).__typescript = 'document';
-          resolve();
+          setTimeout(() => {
+            Object.assign(ts, globalThis.ts);
+            resolve();
+          });
         };
         tsScript.onerror = reject;
         document.head.appendChild(tsScript);

@@ -1,4 +1,2 @@
 
-export default {
-  __typescript: 'patched'
-};
+export default {};

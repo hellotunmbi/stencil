@@ -1,7 +1,9 @@
 import * as d from '../../declarations';
+import { FsObj } from './modules/fs';
 import fs from 'fs';
 
 
-export const initFs = (userSys: d.CompilerSystem) => {
-  Object.assign((fs as any).__sys, userSys);
+export const patchFs = (userSys: d.CompilerSystem) => {
+  const fsObj = (fs as any) as FsObj;
+  Object.assign(fsObj.__sys, userSys);
 };

@@ -2,10 +2,11 @@ import * as d from '../../declarations';
 
 
 export const getLogger = (config: d.Config) => {
+  const logger = createLogger();
   if (config.logger) {
-    return config.logger;
+    Object.assign(logger, config.logger);
   }
-  return createLogger();
+  return logger;
 };
 
 

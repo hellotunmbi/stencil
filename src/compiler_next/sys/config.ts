@@ -4,7 +4,9 @@ import { getStencilSys } from './stencil-sys';
 import path from 'path';
 
 
-export const getConfig = (config: d.Config) => {
+export const getConfig = (userConfig: d.Config) => {
+  const config = Object.assign(userConfig, {});
+
   config.logger = getLogger(config);
 
   config.sys_next = getStencilSys(config);
