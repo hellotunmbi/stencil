@@ -1,4 +1,6 @@
-import * as d from '.';
+import { BuildLog, BuildNoChangeResults } from './build';
+import { CompilerBuildResults, CompilerBuildStart } from './compiler_next';
+import { FsWatchResults } from './fs-watch';
 
 
 export interface BuildOnEvents {
@@ -11,9 +13,9 @@ export interface BuildOnEvents {
   on(eventName: CompilerEventDirAdd, cb: (path: string) => void): BuildOnEventRemove;
   on(eventName: CompilerEventDirDelete, cb: (path: string) => void): BuildOnEventRemove;
 
-  on(eventName: CompilerEventBuildStart, cb: (buildStart: d.CompilerBuildStart) => void): BuildOnEventRemove;
-  on(eventName: CompilerEventBuildFinish, cb: (buildResults: d.CompilerBuildResults) => void): BuildOnEventRemove;
-  on(eventName: CompilerEventBuildLog, cb: (buildLog: d.BuildLog) => void): BuildOnEventRemove;
+  on(eventName: CompilerEventBuildStart, cb: (buildStart: CompilerBuildStart) => void): BuildOnEventRemove;
+  on(eventName: CompilerEventBuildFinish, cb: (buildResults: CompilerBuildResults) => void): BuildOnEventRemove;
+  on(eventName: CompilerEventBuildLog, cb: (buildLog: BuildLog) => void): BuildOnEventRemove;
   on(eventName: CompilerEventBuildNoChange, cb: () => void): BuildOnEventRemove;
 }
 
@@ -25,12 +27,12 @@ export interface BuildEmitEvents {
   emit(eventName: CompilerEventDirAdd, path: string): void;
   emit(eventName: CompilerEventDirDelete, path: string): void;
 
-  emit(eventName: CompilerEventBuildStart, buildStart: d.CompilerBuildStart): void;
-  emit(eventName: CompilerEventBuildFinish, buildResults: d.CompilerBuildResults): void;
-  emit(eventName: CompilerEventBuildNoChange, buildNoChange: d.BuildNoChangeResults): void;
-  emit(eventName: CompilerEventBuildLog, buildLog: d.BuildLog): void;
+  emit(eventName: CompilerEventBuildStart, buildStart: CompilerBuildStart): void;
+  emit(eventName: CompilerEventBuildFinish, buildResults: CompilerBuildResults): void;
+  emit(eventName: CompilerEventBuildNoChange, buildNoChange: BuildNoChangeResults): void;
+  emit(eventName: CompilerEventBuildLog, buildLog: BuildLog): void;
 
-  emit(eventName: CompilerEventFsChange, fsWatchResults: d.FsWatchResults): void;
+  emit(eventName: CompilerEventFsChange, fsWatchResults: FsWatchResults): void;
 }
 
 export type BuildOnEventRemove = () => boolean;

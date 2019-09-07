@@ -1,4 +1,17 @@
-import * as d from '.';
+import { BuildOutput, CompilerBuildResults } from './compiler_next';
+import { Collection } from './collection';
+import { CompilerCtx } from './compiler';
+import { ComponentCompilerMeta, Encapsulation } from './component-compiler-meta';
+import { Config } from './config';
+import { CopyResults } from './assets';
+import { Diagnostic } from './diagnostics';
+import { EntryModule } from './entry';
+import { LoggerTimeSpan } from './logger';
+import { Module } from './module';
+import { PackageJsonData } from './system';
+import { PageReloadStrategy } from './dev-server';
+import { ValidateTypesResults } from './transpile';
+
 
 export type ModuleFormat =
   | 'amd'
@@ -20,22 +33,22 @@ export interface RollupResults {
 
 export interface BuildCtx {
   buildId: number;
-  buildResults: d.BuildResults;
-  buildResults_next: d.CompilerBuildResults;
+  buildResults: BuildResults;
+  buildResults_next: CompilerBuildResults;
   buildMessages: string[];
   bundleBuildCount: number;
-  collections: d.Collection[];
-  compilerCtx: d.CompilerCtx;
-  components: d.ComponentCompilerMeta[];
+  collections: Collection[];
+  compilerCtx: CompilerCtx;
+  components: ComponentCompilerMeta[];
   componentGraph: Map<string, string[]>;
-  config: d.Config;
-  createTimeSpan(msg: string, debug?: boolean): d.LoggerTimeSpan;
+  config: Config;
+  createTimeSpan(msg: string, debug?: boolean): LoggerTimeSpan;
   data: any;
   debug: (msg: string) => void;
-  diagnostics: d.Diagnostic[];
+  diagnostics: Diagnostic[];
   dirsAdded: string[];
   dirsDeleted: string[];
-  entryModules: d.EntryModule[];
+  entryModules: EntryModule[];
   filesAdded: string[];
   filesChanged: string[];
   filesDeleted: string[];
@@ -55,11 +68,11 @@ export interface BuildCtx {
   indexBuildCount: number;
   indexDoc: Document;
   isRebuild: boolean;
-  moduleFiles: d.Module[];
-  outputs: d.BuildOutput[];
-  packageJson: d.PackageJsonData;
+  moduleFiles: Module[];
+  outputs: BuildOutput[];
+  packageJson: PackageJsonData;
   packageJsonFilePath: string;
-  pendingCopyTasks: Promise<d.CopyResults>[];
+  pendingCopyTasks: Promise<CopyResults>[];
   progress(task: BuildTask): void;
   requiresFullBuild: boolean;
   rollupResults?: RollupResults;
@@ -69,12 +82,12 @@ export interface BuildCtx {
   styleBuildCount: number;
   stylesPromise: Promise<void>;
   stylesUpdated: BuildStyleUpdate[];
-  timeSpan: d.LoggerTimeSpan;
+  timeSpan: LoggerTimeSpan;
   timestamp: string;
   transpileBuildCount: number;
   validateTypesBuild?(): Promise<void>;
-  validateTypesHandler?: (results: d.ValidateTypesResults) => Promise<void>;
-  validateTypesPromise?: Promise<d.ValidateTypesResults>;
+  validateTypesHandler?: (results: ValidateTypesResults) => Promise<void>;
+  validateTypesPromise?: Promise<ValidateTypesResults>;
 }
 
 
@@ -103,7 +116,7 @@ export interface BuildResults {
   };
   bundleBuildCount: number;
   components: BuildComponent[];
-  diagnostics: d.Diagnostic[];
+  diagnostics: Diagnostic[];
   dirsAdded: string[];
   dirsDeleted: string[];
   duration: number;
@@ -130,7 +143,7 @@ export interface HotModuleReplacement {
   imagesUpdated?: string[];
   indexHtmlUpdated?: boolean;
   inlineStylesUpdated?: HmrStyleUpdate[];
-  reloadStrategy: d.PageReloadStrategy;
+  reloadStrategy: PageReloadStrategy;
   scriptsAdded?: string[];
   scriptsDeleted?: string[];
   serviceWorkerUpdated?: boolean;
@@ -188,7 +201,7 @@ export interface BuildEntry {
   bundles: BuildBundle[];
   inputs: string[];
   modes?: string[];
-  encapsulations: d.Encapsulation[];
+  encapsulations: Encapsulation[];
 }
 
 
@@ -266,7 +279,7 @@ export interface BundleModule {
   entryKey: string;
   modeNames: string[];
   rollupResult: RollupResult;
-  cmps: d.ComponentCompilerMeta[];
+  cmps: ComponentCompilerMeta[];
   outputs: BundleModuleOutput[];
 }
 

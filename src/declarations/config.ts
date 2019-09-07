@@ -1,4 +1,11 @@
-import * as d from '.';
+import { CompilerSystem } from './compiler_next';
+import { CopyTask } from './assets';
+import { DevServerConfig, StencilDevServerConfig } from './dev-server';
+import { Logger } from './logger';
+import { OutputTarget } from './output-targets';
+import { StencilSystem } from './system';
+import { TestingConfig } from './testing';
+
 
 /**
  * https://stenciljs.com/docs/config/
@@ -40,7 +47,7 @@ export interface StencilConfig {
    *
    * @deprecated
    */
-  copy?: d.CopyTask[];
+  copy?: CopyTask[];
 
   /**
    * Stencil will cache build results in order to speed up rebuilds.
@@ -98,7 +105,7 @@ export interface StencilConfig {
    *
    * The outputTargets config is an array of objects, with types of www and dist.
    */
-  outputTargets?: d.OutputTarget[];
+  outputTargets?: OutputTarget[];
 
   /**
    * The plugins config can be used to add your own rollup plugins.
@@ -160,12 +167,12 @@ export interface StencilConfig {
    * Object to provide a custom logger. By default a `logger` is already provided for the
    * platform the compiler is running on, such as NodeJS or a browser.
    */
-  logger?: d.Logger;
+  logger?: Logger;
 
   globalScript?: string;
   srcIndexHtml?: string;
   watch?: boolean;
-  testing?: d.TestingConfig;
+  testing?: TestingConfig;
   maxConcurrentWorkers?: number;
   maxConcurrentTasksPerWorker?: number;
   preamble?: string;
@@ -176,10 +183,10 @@ export interface StencilConfig {
   buildLogFilePath?: string;
   cacheDir?: string;
   devInspector?: boolean;
-  devServer?: d.StencilDevServerConfig;
+  devServer?: StencilDevServerConfig;
   enableCacheStats?: boolean;
-  sys?: d.StencilSystem;
-  sys_next?: d.CompilerSystem;
+  sys?: StencilSystem;
+  sys_next?: CompilerSystem;
   tsconfig?: string;
   validateTypes?: boolean;
   watchIgnoredRegex?: RegExp;
@@ -195,7 +202,7 @@ export interface Config extends StencilConfig {
   cwd?: string;
   writeLog?: boolean;
   rollupPlugins?: any[];
-  devServer?: d.DevServerConfig;
+  devServer?: DevServerConfig;
   flags?: ConfigFlags;
   fsNamespace?: string;
   logLevel?: 'error'|'warn'|'info'|'debug'|string;
@@ -206,7 +213,7 @@ export interface Config extends StencilConfig {
   _lifecycleDOMEvents?: boolean;
 }
 
-export interface BrowserConfig extends d.StencilConfig {
+export interface BrowserConfig extends StencilConfig {
   win?: Window;
 }
 

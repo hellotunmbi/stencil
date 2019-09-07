@@ -1,13 +1,16 @@
-import * as d from '.';
+import { Build } from './build-conditionals';
+import { BuilderProgram, CustomTransformers, Diagnostic } from 'typescript';
+import { BuildOnEvents, CompilerEventFileAdd, CompilerEventFileDelete, CompilerEventFileUpdate } from './build-events';
+import { HotModuleReplacement } from './build';
 import { OutputOptions } from 'rollup';
-import ts from 'typescript';
+import { OutputTargetBaseNext } from './output-targets';
 
 
 export interface CompilerNext {
-  build(): Promise<d.CompilerBuildResults>;
-  createWatcher(): Promise<d.CompilerWatcher>;
+  build(): Promise<CompilerBuildResults>;
+  createWatcher(): Promise<CompilerWatcher>;
   destroy(): Promise<void>;
-  sys: d.CompilerSystem;
+  sys: CompilerSystem;
 }
 
 export interface CompilerSystem {
@@ -100,7 +103,7 @@ export interface CompilerSystem {
   writeFileSync(p: string, content: string): boolean;
 }
 
-export type CompilerFileWatcherEvent = d.CompilerEventFileAdd | d.CompilerEventFileDelete | d.CompilerEventFileUpdate;
+export type CompilerFileWatcherEvent = CompilerEventFileAdd | CompilerEventFileDelete | CompilerEventFileUpdate;
 
 export type CompilerFileWatcherCallback = (fileName: string, eventKind: CompilerFileWatcherEvent) => void;
 
@@ -123,13 +126,13 @@ export interface CompilerSystemMakeDirectoryOptions {
 
 
 export interface BundleOptions {
-  conditionals: d.Build;
+  conditionals: Build;
   id: string;
-  customTransformers: ts.CustomTransformers;
+  customTransformers: CustomTransformers;
   inputs: {[entryKey: string]: string};
   outputOptions: OutputOptions;
-  outputTargets: d.OutputTargetBaseNext[];
-  tsBuilder: ts.BuilderProgram;
+  outputTargets: OutputTargetBaseNext[];
+  tsBuilder: BuilderProgram;
 }
 
 
@@ -141,7 +144,7 @@ export interface CompilerFsStats {
 }
 
 
-export interface CompilerWatcher extends d.BuildOnEvents {
+export interface CompilerWatcher extends BuildOnEvents {
   start(): Promise<WatcherCloseResults>;
   close(): Promise<WatcherCloseResults>;
 }
@@ -154,7 +157,7 @@ export interface CompilerBuildStart {
 
 export interface CompilerBuildResults {
   buildId: number;
-  diagnostics: d.Diagnostic[];
+  diagnostics: Diagnostic[];
   dirsAdded: string[];
   dirsDeleted: string[];
   duration: number;
@@ -164,7 +167,7 @@ export interface CompilerBuildResults {
   filesDeleted: string[];
   hasError: boolean;
   hasSuccessfulBuild: boolean;
-  hmr?: d.HotModuleReplacement;
+  hmr?: HotModuleReplacement;
   isRebuild: boolean;
   outputs: BuildOutput[];
   timestamp: string;
@@ -180,7 +183,7 @@ export interface BuildOutputFile {
   content: string;
 }
 
-export type OnCallback = (buildStart: d.CompilerBuildStart) => void;
+export type OnCallback = (buildStart: CompilerBuildStart) => void;
 export type RemoveCallback = () => boolean;
 
 export interface WatcherCloseResults {

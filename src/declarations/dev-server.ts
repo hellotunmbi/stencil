@@ -1,7 +1,9 @@
-import * as d from '.';
+import { BuildEmitEvents } from './build-events';
+import { BuildLog, BuildResults } from './build';
+import { FsStats } from './file-system';
 
 
-export interface DevServer extends d.BuildEmitEvents {
+export interface DevServer extends BuildEmitEvents {
   browserUrl: string;
   close(): Promise<void>;
 }
@@ -79,7 +81,7 @@ export interface DevClientWindow extends Window {
 
 export interface DevClientConfig {
   basePath: string;
-  editors: d.DevServerEditor[];
+  editors: DevServerEditor[];
   reloadStrategy: PageReloadStrategy;
 }
 
@@ -96,7 +98,7 @@ export interface HttpRequest {
   url: string;
   pathname?: string;
   filePath?: string;
-  stats?: d.FsStats;
+  stats?: FsStats;
   headers?: {[name: string]: string};
   host?: string;
 }
@@ -105,8 +107,8 @@ export interface HttpRequest {
 export interface DevServerMessage {
   startServer?: DevServerConfig;
   serverStated?: DevServerStartResponse;
-  buildLog?: d.BuildLog;
-  buildResults?: d.BuildResults;
+  buildLog?: BuildLog;
+  buildResults?: BuildResults;
   requestBuildResults?: boolean;
   error?: { message?: string; type?: string; stack?: any; };
   isActivelyBuilding?: boolean;
