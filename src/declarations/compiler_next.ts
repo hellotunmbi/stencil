@@ -1,6 +1,7 @@
 import { Build } from './build-conditionals';
-import { BuilderProgram, CustomTransformers, Diagnostic } from 'typescript';
+import { BuilderProgram, CustomTransformers } from 'typescript';
 import { BuildOnEvents, CompilerEventFileAdd, CompilerEventFileDelete, CompilerEventFileUpdate } from './build-events';
+import { Diagnostic } from './diagnostics';
 import { HotModuleReplacement } from './build';
 import { OutputOptions } from 'rollup';
 import { OutputTargetBaseNext } from './output-targets';

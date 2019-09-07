@@ -1,4 +1,12 @@
-import * as d from '../declarations';
+import {
+  ComponentDecorator,
+  ElementDecorator,
+  EventDecorator,
+  ListenDecorator,
+  PropDecorator,
+  StateDecorator,
+  WatchDecorator
+} from '../declarations';
 
 
 export {
@@ -12,47 +20,47 @@ export {
   EventEmitter,
   FunctionalComponent,
   QueueApi,
-  JSX
+  LocalJSX as JSX
 } from '../declarations';
 
 /**
  * Component
  */
-export declare const Component: d.ComponentDecorator;
+export declare const Component: ComponentDecorator;
 
 /**
  * Element
  */
-export declare const Element: d.ElementDecorator;
+export declare const Element: ElementDecorator;
 
 /**
  * Event
  */
-export declare const Event: d.EventDecorator;
+export declare const Event: EventDecorator;
 
 /**
  * Listen
  */
-export declare const Listen: d.ListenDecorator;
+export declare const Listen: ListenDecorator;
 
 /**
  * Method
  */
-export declare const Method: d.MethodDecorator;
+export declare const Method: MethodDecorator;
 
 /**
  * Prop
  */
-export declare const Prop: d.PropDecorator;
+export declare const Prop: PropDecorator;
 
 /**
  * State
  */
-export declare const State: d.StateDecorator;
+export declare const State: StateDecorator;
 
 /**
  * Watch
  */
-export declare const Watch: d.WatchDecorator;
+export declare const Watch: WatchDecorator;
 
 export * from './platform';
