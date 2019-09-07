@@ -1,5 +1,4 @@
 import * as d from '../../declarations';
-import { collectionOutput } from '../output-targets/component-collection/collection-output';
 import { generateAppTypes } from '../../compiler/types/generate-app-types';
 import { getComponentsFromModules } from '../../compiler/output-targets/output-utils';
 import { loadTypeScriptDiagnostics } from '@utils';
@@ -20,12 +19,13 @@ export const runTsProgram = async (config: d.Config, compilerCtx: d.CompilerCtx,
   const tsTypeChecker = tsProgram.getTypeChecker();
 
   const tsSourceFiles = tsProgram.getSourceFiles();
-  tsSourceFiles.forEach(tsSourceFile => {
-    const moduleFile = parseToModule(config, compilerCtx, buildCtx, tsSourceFile, tsTypeChecker, null);
-    buildCtx.moduleFiles.push(moduleFile);
+  buildCtx.moduleFiles = tsSourceFiles.map(tsSourceFile => {
+    return parseToModule(config, compilerCtx, buildCtx, tsSourceFile, tsTypeChecker, null);
+  }).sort((a, b) => {
+    if (a.sourceFilePath < b.sourceFilePath) return -1;
+    if (a.sourceFilePath > b.sourceFilePath) return 1;
+    return 0;
   });
-
-  await collectionOutput(config, compilerCtx, buildCtx, tsBuilder);
 
   buildCtx.components = getComponentsFromModules(buildCtx.moduleFiles);
   updateComponentBuildConditionals(compilerCtx.moduleMap, buildCtx.components);

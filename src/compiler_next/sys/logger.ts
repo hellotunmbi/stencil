@@ -40,9 +40,7 @@ const createLogger = () => {
       };
     },
     printDiagnostics(diagnostics: d.Diagnostic[]) {
-      diagnostics.forEach(diagnostic => {
-        logDiagnostic(diagnostic);
-      });
+      diagnostics.forEach(logDiagnostic);
     },
     buildLogFilePath: null,
     writeLogs(_: boolean) { /**/ }
@@ -68,10 +66,11 @@ const logDiagnostic = (diagnostic: d.Diagnostic) => {
     prefix = diagnostic.header;
   }
 
-  let msg = ``;
+  let msg = '';
 
-  if (diagnostic.relFilePath) {
-    msg += diagnostic.relFilePath;
+  const filePath = diagnostic.relFilePath || diagnostic.absFilePath;
+  if (filePath) {
+    msg += filePath;
 
     if (typeof diagnostic.lineNumber === 'number' && diagnostic.lineNumber > 0) {
       msg += ', line ' + diagnostic.lineNumber;
@@ -80,10 +79,17 @@ const logDiagnostic = (diagnostic: d.Diagnostic) => {
         msg += ', column ' + diagnostic.columnNumber;
       }
     }
-    msg += `\n`;
+    msg += '\n';
   }
 
   msg += diagnostic.messageText;
+
+  if (diagnostic.lines && diagnostic.lines.length > 0) {
+    diagnostic.lines.forEach(l => {
+      msg += '\n' + l.lineNumber + ':  ' + l.text;
+    });
+    msg += '\n';
+  }
 
   const styledPrefix = [
     '%c' + prefix,

@@ -2,35 +2,27 @@ import * as d from '../../../declarations';
 import { catchError, normalizePath } from '@utils';
 import { convertDecoratorsToStatic } from '../../../compiler/transformers/decorators-to-static/convert-decorators';
 import { convertStaticToMeta } from '../../../compiler/transformers/static-to-meta/visitor';
-import { isOutputTargetCollectionNext } from '../../../compiler/output-targets/output-utils';
 import { updateStencilCoreImports } from '../../../compiler/transformers/update-stencil-core-import';
 import path from 'path';
 import ts from 'typescript';
 
 
-export const collectionOutput = async (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx: d.BuildCtx, tsBuilder: ts.BuilderProgram) => {
+export const collectionOutput = async (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx: d.BuildCtx, tsBuilder: ts.BuilderProgram, outputTarget: d.OutputTargetCollectionNext) => {
   const timespan = buildCtx.createTimeSpan(`generate collection started`, true);
 
   try {
     const tsTypeChecker = tsBuilder.getProgram().getTypeChecker();
-    const collectionOutputTargets = config.outputTargets.filter(isOutputTargetCollectionNext);
 
     tsBuilder.emit(
       undefined,
       (filePath, data, _w, _e, tsSourceFiles) => {
-        // always write to the .stencil/dist outDir for typescript build caching
-        compilerCtx.fs.writeFile(filePath, data);
-
-        // also save this build to dist/collection output targets if there are any
-        collectionOutputTargets.forEach(outputTarget => {
-          tsSourceFiles.forEach(tsSourceFile => {
-            const sourceFilePath = normalizePath(tsSourceFile.fileName);
-            const outFilePath = sourceFilePath.replace(config.srcDir, '');
-            const outFileDir = path.dirname(outFilePath);
-            const outFileName = path.basename(filePath);
-            const collectionFilePath = path.join(outputTarget.dir, outFileDir, outFileName);
-            compilerCtx.fs.writeFile(collectionFilePath, data);
-          });
+        tsSourceFiles.forEach(tsSourceFile => {
+          const sourceFilePath = normalizePath(tsSourceFile.fileName);
+          const outFilePath = sourceFilePath.replace(config.srcDir, '');
+          const outFileDir = path.dirname(outFilePath);
+          const outFileName = path.basename(filePath);
+          const collectionFilePath = path.join(outputTarget.dir, outFileDir, outFileName);
+          compilerCtx.fs.writeFile(collectionFilePath, data);
         });
       },
       undefined,
@@ -38,22 +30,13 @@ export const collectionOutput = async (config: d.Config, compilerCtx: d.Compiler
       getCollectionCustomTransformers(config, compilerCtx, buildCtx, tsTypeChecker)
     );
 
-    await compilerCtx.fs.commit();
-
-    collectionOutputTargets.map(async outputTarget => {
-      const buildOutputTarget: d.BuildOutput = {
-        type: outputTarget.type,
-        files: []
-      };
-
-      const getFiles = async (dir: string) => {
-        const items = await compilerCtx.fs.readdir(dir);
-      };
-
-      await getFiles(outputTarget.dir);
-
-      buildCtx.outputs.push(buildOutputTarget);
-    });
+    const buildOutputTarget: d.BuildOutput = {
+      type: outputTarget.type,
+      files: (await compilerCtx.fs.readdir(outputTarget.dir, { recursive: true })).map(item => {
+        return item.absPath;
+      })
+    };
+    buildCtx.outputs.push(buildOutputTarget);
 
   } catch (e) {
     catchError(buildCtx.diagnostics, e);

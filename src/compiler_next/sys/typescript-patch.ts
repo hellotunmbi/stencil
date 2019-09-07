@@ -1,5 +1,5 @@
 import * as d from '../../declarations';
-import { dependencies } from '../dependencies';
+import { dependencies } from './dependencies';
 import { IS_DOM_ENV, IS_NODE_ENV, IS_WEB_WORKER_ENV } from './environment';
 import { normalizePath } from '@utils';
 import path from 'path';

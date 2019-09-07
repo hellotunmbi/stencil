@@ -1,6 +1,6 @@
 import * as d from '../declarations';
 import { catchError } from '@utils';
-import { getCompileConfig, getCompileOptions, getTransformOptions } from './module-compile-options';
+import { getCompileConfig, getCompileOptions, getTransformOptions } from './config/compile-module-options';
 import { getPublicCompilerMeta } from '../compiler/transformers/add-component-meta-static';
 import { initTypescript } from './sys/typescript-patch';
 import { transformCssToEsm } from '../compiler/style/css-to-esm';

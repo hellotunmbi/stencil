@@ -1,5 +1,5 @@
-import * as d from '../declarations';
-import { getTerserOptions } from '../compiler/app-core/optimize-module';
+import * as d from '../../declarations';
+import { getTerserOptions } from '../../compiler/app-core/optimize-module';
 import path from 'path';
 import ts from 'typescript';
 

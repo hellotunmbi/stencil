@@ -1,5 +1,6 @@
 import * as d from '../../declarations';
 import { generateBuildResults } from './build-results';
+import path from 'path';
 
 
 export const buildFinish = async (buildCtx: d.BuildCtx) => {
@@ -37,6 +38,7 @@ const buildDone = async (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx:
   if (!buildCtx.hasFinished) {
     // haven't set this build as finished yet
     if (!buildCtx.hasPrintedResults) {
+      cleanDiagnostics(config, buildCtx.buildResults_next.diagnostics);
       config.logger.printDiagnostics(buildCtx.buildResults_next.diagnostics);
     }
 
@@ -141,4 +143,12 @@ const cleanupUpdateMsg = (logger: d.Logger, msg: string, fileNames: string[]) =>
 
     logger.info(`${msg}: ${logger.cyan(fileMsg)}`);
   }
+};
+
+const cleanDiagnostics = (config: d.Config, diagnostics: d.Diagnostic[]) => {
+  diagnostics.forEach(diagnostic => {
+    if (!diagnostic.relFilePath && diagnostic.absFilePath && config.rootDir) {
+      diagnostic.relFilePath = path.relative(config.rootDir, diagnostic.absFilePath);
+    }
+  });
 };

@@ -30,44 +30,7 @@ export class StencilRepl {
           type: this.selectedTarget as any
         }
       ],
-      plugins: [
-        (() => {
-          if (!this.stencilUrl) {
-            return null;
-          }
-          const fetchText = new Map<string, string>();
-          return {
-            resolveId: async (importee, importer) => {
-              if (importee.includes('@stencil') || (importer && importer.includes('@stencil'))) {
-                if (importee.startsWith('@stencil')) {
-                  importee = this.stencilUrl + importee;
-                }
-                if (importer && !path.isAbsolute(importee)) {
-                  const importerDir = path.dirname(importer);
-                  importee = path.resolve(importerDir, importee);
-                }
-                if (importee === '/@stencil/core/internal/client') {
-                  importee = '/@stencil/core/internal/client/index';
-                }
-                if (!importee.endsWith('.mjs')) {
-                  importee += '.mjs';
-                }
-                if (!fetchText.has(importee)) {
-                  const rsp = await fetch(importee);
-                  const text = await rsp.text();
-                  fetchText.set(importee, text);
-                }
-                return importee;
-              }
-            },
-            load: (id) => {
-              if (fetchText.has(id)) {
-                return fetchText.get(id);
-              }
-            }
-          }
-        })()
-      ]
+      plugins: [localDevPlugin(this)]
     };
 
     const validated = validateConfig(userConfig);
@@ -152,6 +115,43 @@ export class StencilRepl {
   }
 }
 
+const localDevPlugin = (repl: StencilRepl) => {
+  if (!repl.stencilUrl) {
+    return null;
+  }
+  const fetchText = new Map<string, string>();
+  return {
+    resolveId: async (importee: string, importer: string) => {
+      if (importee.includes('@stencil') || (importer && importer.includes('@stencil'))) {
+        if (importee.startsWith('@stencil')) {
+          importee = repl.stencilUrl + importee;
+        }
+        if (importer && !path.isAbsolute(importee)) {
+          const importerDir = path.dirname(importer);
+          importee = path.resolve(importerDir, importee);
+        }
+        if (importee === '/@stencil/core/internal/client') {
+          importee = '/@stencil/core/internal/client/index';
+        }
+        if (!importee.endsWith('.mjs')) {
+          importee += '.mjs';
+        }
+        if (!fetchText.has(importee)) {
+          const rsp = await fetch(importee);
+          const text = await rsp.text();
+          fetchText.set(importee, text);
+        }
+        return importee;
+      }
+    },
+    load: (id: string) => {
+      if (fetchText.has(id)) {
+        return fetchText.get(id);
+      }
+    }
+  }
+};
+
 const logDiagnostics = (diagnostics: d.Diagnostic[]) => {
   diagnostics.forEach(d => {
     if (d.level === 'error') {
@@ -159,7 +159,7 @@ const logDiagnostics = (diagnostics: d.Diagnostic[]) => {
     } else if (d.level === 'warn') {
       console.warn(d.messageText);
     } else {
-      console.warn(d.messageText);
+      console.info(d.messageText);
     }
   });
 };
