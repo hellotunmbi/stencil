@@ -1,9 +1,9 @@
-import * as d from '../declarations';
+import { CompilerBuildResults, CompilerEventName, DevServer, DevServerConfig, DevServerMessage } from '../declarations';
 import { ChildProcess, fork } from 'child_process';
 import path from 'path';
 
 
-export async function start(config: d.DevServerConfig) {
+export async function start(config: DevServerConfig) {
   // using the path stuff below because after the the bundles are created
   // then these files are no longer relative to how they are in the src directory
   config.devServerDir = __dirname;
@@ -35,7 +35,7 @@ export async function start(config: d.DevServerConfig) {
 
   const devServerConfig = await startServer(config, serverProcess, devServerContext);
 
-  const devServer: d.DevServer = {
+  const devServer: DevServer = {
     browserUrl: devServerConfig.browserUrl,
     close() {
       try {
@@ -53,8 +53,8 @@ export async function start(config: d.DevServerConfig) {
 }
 
 
-function startServer(config: d.DevServerConfig, serverProcess: ChildProcess, devServerContext: DevServerMainContext) {
-  return new Promise<d.DevServerConfig>((resolve, reject) => {
+function startServer(config: DevServerConfig, serverProcess: ChildProcess, devServerContext: DevServerMainContext) {
+  return new Promise<DevServerConfig>((resolve, reject) => {
     serverProcess.stdout.on('data', (data: any) => {
       // the child server process has console logged data
       config.logger.debug(`dev server: ${data}`);
@@ -65,7 +65,7 @@ function startServer(config: d.DevServerConfig, serverProcess: ChildProcess, dev
       reject(`dev server error: ${data}`);
     });
 
-    serverProcess.on('message', (msg: d.DevServerMessage) => {
+    serverProcess.on('message', (msg: DevServerMessage) => {
       // main process has received a message from the child server process
       mainReceivedMessageFromWorker(config, serverProcess, devServerContext, msg, resolve);
     });
@@ -81,12 +81,12 @@ function startServer(config: d.DevServerConfig, serverProcess: ChildProcess, dev
 }
 
 
-function emitMessageToClient(serverProcess: ChildProcess, devServerContext: DevServerMainContext, eventName: d.CompilerEventName, data: any) {
+function emitMessageToClient(serverProcess: ChildProcess, devServerContext: DevServerMainContext, eventName: CompilerEventName, data: any) {
   if (eventName === 'buildFinish') {
     // a compiler build has finished
     // send the build results to the child server process
     devServerContext.isActivelyBuilding = false;
-    const msg: d.DevServerMessage = {
+    const msg: DevServerMessage = {
       buildResults: Object.assign({}, data)
     };
     delete msg.buildResults.entries;
@@ -98,7 +98,7 @@ function emitMessageToClient(serverProcess: ChildProcess, devServerContext: DevS
     devServerContext.isActivelyBuilding = true;
 
   } else if (eventName === 'buildLog') {
-    const msg: d.DevServerMessage = {
+    const msg: DevServerMessage = {
       buildLog: Object.assign({}, data)
     };
 
@@ -107,7 +107,7 @@ function emitMessageToClient(serverProcess: ChildProcess, devServerContext: DevS
 }
 
 
-function mainReceivedMessageFromWorker(config: d.DevServerConfig, serverProcess: ChildProcess, devServerContext: DevServerMainContext, msg: d.DevServerMessage, resolve: (devServerConfig: any) => void) {
+function mainReceivedMessageFromWorker(config: DevServerConfig, serverProcess: ChildProcess, devServerContext: DevServerMainContext, msg: DevServerMessage, resolve: (devServerConfig: any) => void) {
   if (msg.serverStated) {
     // received a message from the child process that the server has successfully started
     if (config.openBrowser && msg.serverStated.initialLoadUrl) {
@@ -124,7 +124,7 @@ function mainReceivedMessageFromWorker(config: d.DevServerConfig, serverProcess:
     if (devServerContext.lastBuildResults != null) {
       // we do have build results, so let's send them to the child process
       // but don't send any previous live reload data
-      const msg: d.DevServerMessage = {
+      const msg: DevServerMessage = {
         buildResults: Object.assign({}, devServerContext.lastBuildResults) as any,
         isActivelyBuilding: devServerContext.isActivelyBuilding
       };
@@ -135,7 +135,7 @@ function mainReceivedMessageFromWorker(config: d.DevServerConfig, serverProcess:
       serverProcess.send(msg);
 
     } else {
-      const msg: d.DevServerMessage = {
+      const msg: DevServerMessage = {
         isActivelyBuilding: true
       };
       serverProcess.send(msg);
@@ -170,5 +170,5 @@ function mainReceivedMessageFromWorker(config: d.DevServerConfig, serverProcess:
 
 interface DevServerMainContext {
   isActivelyBuilding: boolean;
-  lastBuildResults: d.CompilerBuildResults;
+  lastBuildResults: CompilerBuildResults;
 }

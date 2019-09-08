@@ -1,4 +1,4 @@
-import * as d from '../../declarations';
+import { Config, ConfigBundle, Diagnostic } from '../../declarations';
 import { buildError, sortBy } from '@utils';
 import { validateNamespace } from './validate-namespace';
 import { validateOutputTargets } from './outputs';
@@ -8,9 +8,9 @@ import { validateRollupConfig } from '../../compiler/config/validate-rollup-conf
 import { validateTesting } from '../../compiler/config/validate-testing';
 
 
-export function validateConfig(userConfig?: d.Config) {
+export function validateConfig(userConfig?: Config) {
   const config = Object.assign({}, userConfig || {}); // not positive it's json safe
-  const diagnostics: d.Diagnostic[] = [];
+  const diagnostics: Diagnostic[] = [];
 
   // copy flags (we know it'll be json safe)
   config.flags = JSON.parse(JSON.stringify(config.flags || {}));
@@ -68,7 +68,7 @@ export function validateConfig(userConfig?: d.Config) {
 
   // bundles
   if (Array.isArray(config.bundles)) {
-    config.bundles = sortBy(config.bundles, (a: d.ConfigBundle) => a.components.length);
+    config.bundles = sortBy(config.bundles, (a: ConfigBundle) => a.components.length);
   } else {
     config.bundles = [];
   }

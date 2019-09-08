@@ -1,4 +1,4 @@
-import * as d from '../../declarations';
+import { CompilerSystem } from '../../declarations';
 import { normalizePath } from '@utils';
 import fs from 'fs';
 import path from 'path';
@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 
 export function getNodeSys(prcs: NodeJS.Process) {
-  const sys: d.CompilerSystem = {
+  const sys: CompilerSystem = {
     access(p) {
       return new Promise(resolve => {
         fs.access(p, err => {
@@ -35,9 +35,6 @@ export function getNodeSys(prcs: NodeJS.Process) {
     },
     getCurrentDirectory() {
       return prcs.cwd();
-    },
-    getExecutingFilePath() {
-      return __filename;
     },
     mkdir(p, opts) {
       return new Promise(resolve => {

@@ -1,6 +1,6 @@
 import { Component, Host, h, Prop, State, Listen } from '@stencil/core';
 import * as d from '../../../../../dist/declarations';
-import { createCompiler, path, validateConfig } from '../../../../../compiler/stencil_next.esm';
+import { createCompiler, path, validateConfig } from '../../../../../compiler/stencil_next';
 
 
 @Component({

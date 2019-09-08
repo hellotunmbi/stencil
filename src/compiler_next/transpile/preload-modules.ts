@@ -1,39 +1,49 @@
 import * as d from '../../declarations';
-import { createCustomResolver } from '../sys/resolve-module';
-import { rollupNodeResolvePlugin } from '@compiler-plugins';
+import dtsContent from '@internal-dts';
 import path from 'path';
+import { IS_NODE_ENV } from '../sys/environment';
+import ts from 'typescript';
 
 
-export const preloadSourceModules = async (_config: d.Config, compilerCtx: d.CompilerCtx) => {
-  // const corePkgPath = path.join(getStencilCorePath(config), 'package.json');
-  // const internalPkgPath = path.join(getStencilCoreInternalPath(config), 'package.json');
+export const preloadSourceModules = async (config: d.Config, tsHost: ts.ProgramHost<any>) => {
+  if (IS_NODE_ENV) {
+    return;
+  }
+  const sys = config.sys_next;
 
-  // const hasCorePkg = await compilerCtx.fs.access(corePkgPath);
-  // if (!hasCorePkg) {
-  //   await compilerCtx.fs.writeFile(corePkgPath, '');
-  // }
-
-  // const hasInternalPkg = await compilerCtx.fs.access(internalPkgPath);
-  // if (!hasInternalPkg) {
-  //   await compilerCtx.fs.writeFile(internalPkgPath, '');
-  // }
-
-  const nodeResolve = rollupNodeResolvePlugin({
-    mainFields: ['collection:main', 'jsnext:main', 'es2017', 'es2015', 'module', 'main'],
-    browser: true,
-    customResolveOptions: createCustomResolver(compilerCtx.fs)
+  const ensureDirs = ['node_modules', '@stencil', 'core', 'internal'];
+  let internalDir = config.rootDir;
+  ensureDirs.forEach(ensureDir => {
+    internalDir = path.join(internalDir, ensureDir);
+    sys.mkdirSync(internalDir);
   });
 
-  const internalPkg = await nodeResolve.resolveId('@stencil/core/internal');
-  if (internalPkg) {
-    const resolvedInternalId = internalPkg.id;
-    if (resolvedInternalId) {
+  const stencilCoreInternalPath = getStencilCoreInternalPath(config);
+  const internalPkgPath = path.join(stencilCoreInternalPath, 'package.json');
+  const internalJsPath = path.join(stencilCoreInternalPath, 'index.js');
+  const internalDtsPath = path.join(stencilCoreInternalPath, 'index.d.ts');
 
-      console.log(internalPkg);
-      const a = await compilerCtx.fs.readFile(resolvedInternalId);
-      console.log(a);
-    }
+  const hasInternalPkgJson = sys.accessSync(internalPkgPath);
+  if (!hasInternalPkgJson) {
+    sys.writeFileSync(internalPkgPath, JSON.stringify({
+      name: '@stencil/core/internal',
+      main: 'index.js',
+      types: 'index.d.ts'
+    }));
+    sys.writeFileSync(internalJsPath, '');
+    sys.writeFileSync(internalDtsPath, dtsContent);
   }
+
+  const libDirs = ['node_modules', 'typescript-libs'];
+  let libDirPath = config.rootDir;
+  libDirs.forEach(libDir => {
+    libDirPath = path.join(libDirPath, libDir);
+    sys.mkdirSync(libDirPath);
+  });
+
+  tsHost.getDefaultLibLocation = () => libDirPath;
+
+
 };
 
 

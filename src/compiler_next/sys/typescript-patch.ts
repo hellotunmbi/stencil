@@ -7,62 +7,58 @@ import ts from 'typescript';
 
 
 export const patchTypescript = async (config: d.Config, sys: d.CompilerSystem) => {
-  if (!ts.transform) {
-    await getTs();
-  }
+  const tsUrl = dependencies.find(dep => dep.name === 'typescript').url;
+
+  const loadedTs = await loadTypescript(tsUrl);
+
+  Object.assign(ts, loadedTs);
 
   if (!ts.sys) {
-    ts.sys = createTsSys(sys);
-  }
-
-  if (globalThis.ts && !globalThis.ts.sys) {
-    globalThis.ts.sys = ts.sys;
+    ts.sys = createTsSys(sys, tsUrl);
   }
 
   config.tsconfig = getTsConfigPath(config);
 };
 
 
-const getTs = async () => {
+const loadTypescript = async (tsUrl: string) => {
+
+  if (IS_NODE_ENV) {
+    // NodeJS
+    return require('typescript');
+  }
+
   if (globalThis.ts) {
     // "ts" already on global scope
-    Object.assign(ts, globalThis.ts);
-
-  } else if (IS_NODE_ENV) {
-    // NodeJS
-    Object.assign(ts, require('typescript'));
-
-  } else {
-    const dep = dependencies.find(dep => dep.name === 'typescript');
-
-    if (IS_WEB_WORKER_ENV) {
-      // browser web worker
-      (self as any).importScripts(dep.url);
-      Object.assign(ts, globalThis.ts);
-
-    } else if (IS_DOM_ENV) {
-      // browser main thread
-      await new Promise((resolve, reject) => {
-        const tsScript = document.createElement('script');
-        tsScript.src = dep.url;
-        tsScript.onload = () => {
-          setTimeout(() => {
-            Object.assign(ts, globalThis.ts);
-            resolve();
-          });
-        };
-        tsScript.onerror = reject;
-        document.head.appendChild(tsScript);
-      });
-
-    } else {
-      throw new Error(`typescript: missing global "ts" variable`);
-    }
+    return globalThis.ts;
   }
+
+  if (IS_WEB_WORKER_ENV) {
+    // browser web worker
+    (self as any).importScripts(tsUrl);
+    return globalThis.ts;
+  }
+
+  if (IS_DOM_ENV) {
+    // browser main thread
+    return new Promise((resolve, reject) => {
+      const tsScript = document.createElement('script');
+      tsScript.src = tsUrl;
+      tsScript.onload = () => {
+        setTimeout(() => {
+          resolve(globalThis.ts);
+        });
+      };
+      tsScript.onerror = reject;
+      document.head.appendChild(tsScript);
+    });
+  }
+
+  throw new Error(`typescript: missing global "ts" variable`);
 };
 
 
-const createTsSys = (stencilSys: d.CompilerSystem) => {
+const createTsSys = (stencilSys: d.CompilerSystem, tsUrl: string) => {
 
   const visitDirectory = (matchingPaths: Set<string>, p: string, extensions: ReadonlyArray<string>) => {
     const dirItems = stencilSys.readdirSync(p);
@@ -108,7 +104,7 @@ const createTsSys = (stencilSys: d.CompilerSystem) => {
       return false;
     },
     getExecutingFilePath() {
-      return stencilSys.getExecutingFilePath();
+      return tsUrl;
     },
     getCurrentDirectory() {
       return stencilSys.getCurrentDirectory();
@@ -126,6 +122,18 @@ const createTsSys = (stencilSys: d.CompilerSystem) => {
       return Array.from(matchingPaths);
     },
     readFile(p, encoding) {
+      if (p.startsWith('https:') || p.startsWith('http:')) {
+        if (IS_WEB_WORKER_ENV) {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', p, false); // synchronous request
+          xhr.send(null);
+          return xhr.responseText;
+
+        } else {
+          throw new Error(`stencil compiler must be ran from within a web worker to load: ${p}`);
+        }
+      }
+
       return stencilSys.readFileSync(p, encoding);
     },
     resolvePath(p) {

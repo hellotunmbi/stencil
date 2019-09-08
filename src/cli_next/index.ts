@@ -1,4 +1,4 @@
-import * as d from '../declarations';
+import { Logger } from '../declarations';
 import { getNodeConfig } from './sys/node-config';
 import { getNodeCwd } from './sys/node-cwd';
 import { getNodeLogger } from './sys/node-logger';
@@ -29,7 +29,7 @@ export async function run(prcs: NodeJS.Process) {
 }
 
 
-export function setupNodeProcess(prcs: NodeJS.Process, logger: d.Logger) {
+export function setupNodeProcess(prcs: NodeJS.Process, logger: Logger) {
   try {
     const v = prcs.version.substring(1).split('.');
     const major = parseInt(v[0], 10);

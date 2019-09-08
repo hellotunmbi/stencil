@@ -1,4 +1,5 @@
 import * as d from '../../declarations';
+import { preloadSourceModules } from './preload-modules';
 import { TSCONFIG_NAME_FALLBACK, getTsConfigFallback, getTsOptionsToExtend } from './ts-config';
 import path from 'path';
 import ts from 'typescript';
@@ -33,7 +34,7 @@ export const createTsWatchProgram = async (config: d.Config, compilerCtx: d.Comp
     await compilerCtx.fs.writeFile(config.tsconfig, tsConfig, { immediateWrite: true });
   }
 
-  const tsWatchCompilerHost = ts.createWatchCompilerHost(
+  const tsWatchHost = ts.createWatchCompilerHost(
     config.tsconfig,
     optionsToExtend,
     tsWatchSys,
@@ -46,11 +47,13 @@ export const createTsWatchProgram = async (config: d.Config, compilerCtx: d.Comp
     }
   );
 
-  tsWatchCompilerHost.afterProgramCreate = async (tsBuilder) => {
+  tsWatchHost.afterProgramCreate = async (tsBuilder) => {
     isRunning = true;
     await buildCallback(tsBuilder);
     isRunning = false;
   };
 
-  return ts.createWatchProgram(tsWatchCompilerHost);
+  await preloadSourceModules(config, tsWatchHost);
+
+  return ts.createWatchProgram(tsWatchHost);
 };

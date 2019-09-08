@@ -29,7 +29,6 @@ export interface CompilerSystem {
   copyFile(src: string, dst: string): Promise<boolean>;
   exit(exitCode: number): void;
   getCurrentDirectory(): string;
-  getExecutingFilePath(): string;
   /**
    * Always returns a boolean if the directory was created or not. Does not throw.
    */

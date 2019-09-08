@@ -36,6 +36,9 @@
       "@dev-server": [
         "src/dev-server_next/index.ts"
       ],
+      "@internal-dts": [
+        "src/compiler_next/sys/modules/compiler-internal-dts.ts"
+      ],
       "@mock-doc": [
         "src/mock-doc/index.ts"
       ],
@@ -49,7 +52,7 @@
         "src/testing/index.ts"
       ],
       "@stencil/core/internal": [
-        "src/index_next.ts"
+        "src/internal.ts"
       ],
       "@stencil/core/testing": [
         "src/testing/index.ts"
@@ -61,7 +64,7 @@
   },
 
   "files": [
-    "src/index_next.ts",
+    "src/internal.ts",
     "src/cli_next/public.ts",
     "src/compiler_next/public.ts",
     "src/compiler_next/sys/modules/index.ts",

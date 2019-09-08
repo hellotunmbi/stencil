@@ -1,4 +1,4 @@
-import * as d from '../../declarations';
+import { CompilerSystem, Config, FileSystem, Logger } from '../../declarations';
 import { normalizePath } from '@utils';
 import { parseFlags } from '../../cli_next/sys/parse-flags';
 import { validateConfig } from '@compiler';
@@ -8,8 +8,8 @@ import path from 'path';
 import ts from 'typescript';
 
 
-export function getNodeConfig(prcs: NodeJS.Process, sys: d.CompilerSystem, logger: d.Logger, cwd: string) {
-  let config: d.Config = null;
+export function getNodeConfig(prcs: NodeJS.Process, sys: CompilerSystem, logger: Logger, cwd: string) {
+  let config: Config = null;
 
   try {
     const flags = parseFlags(prcs);
@@ -66,8 +66,8 @@ function getConfigFilePath(cwd: string, configArg: string) {
 }
 
 
-export function loadConfigFile(fs: d.FileSystem, configPath: string, cwd: string) {
-  let config: d.Config;
+function loadConfigFile(fs: FileSystem, configPath: string, cwd: string) {
+  let config: Config;
 
   let hasConfigFile = false;
 
@@ -113,7 +113,7 @@ export function loadConfigFile(fs: d.FileSystem, configPath: string, cwd: string
 }
 
 
-function getConfigPathFromDirectory(fs: d.FileSystem, dir: string) {
+function getConfigPathFromDirectory(fs: FileSystem, dir: string) {
   // this is only a directory, so let's make some assumptions
 
   for (let i = 0; i < CONFIG_FILENAMES.length; i++) {
@@ -135,7 +135,7 @@ const CONFIG_FILENAMES = [
 ];
 
 
-function requireConfigFile(fs: d.FileSystem, configFilePath: string) {
+function requireConfigFile(fs: FileSystem, configFilePath: string) {
   // ensure we cleared out node's internal require() cache for this file
   delete require.cache[path.resolve(configFilePath)];
 

@@ -1,4 +1,4 @@
-import * as d from '../declarations';
+import { CompilerNext, CompilerWatcher, Config } from '../declarations';
 import { CompilerContext } from '../compiler/build/compiler-ctx';
 import { createFullBuild } from './build/full-build';
 import { createWatchBuild } from './build/watch-build';
@@ -6,10 +6,9 @@ import { getConfig } from './sys/config';
 import { inMemoryFileSystem } from './sys/in-memory-fs';
 import { patchFs } from './sys/fs-patch';
 import { patchTypescript } from './sys/typescript-patch';
-import { preloadSourceModules } from './transpile/preload-modules';
 
 
-export const createCompiler = async (config: d.Config) => {
+export const createCompiler = async (config: Config) => {
   config = getConfig(config);
   const sys = config.sys_next;
 
@@ -19,11 +18,9 @@ export const createCompiler = async (config: d.Config) => {
   const compilerCtx = new CompilerContext(config);
   compilerCtx.fs = inMemoryFileSystem(sys);
 
-  await preloadSourceModules(config, compilerCtx);
+  let watcher: CompilerWatcher = null;
 
-  let watcher: d.CompilerWatcher = null;
-
-  const compiler: d.CompilerNext = {
+  const compiler: CompilerNext = {
     build: () => createFullBuild(config, compilerCtx),
     createWatcher: async () => {
       watcher = await createWatchBuild(config, compilerCtx);

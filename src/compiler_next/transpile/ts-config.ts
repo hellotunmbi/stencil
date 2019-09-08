@@ -10,6 +10,7 @@ export const getTsOptionsToExtend = (config: d.Config) => {
     declaration: true,
     incremental: config.enableCache,
     module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
     noEmitOnError: true,
     outDir: config.cacheDir,
     paths: {

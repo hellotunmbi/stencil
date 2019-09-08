@@ -40,7 +40,7 @@ export default {
   },
   plugins: [
     {
-      writeBundle() {
+      buildEnd() {
         fs.copySync(srcStaticDir, dstStaticDir);
       }
     }

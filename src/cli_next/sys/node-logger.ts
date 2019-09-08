@@ -1,4 +1,4 @@
-import * as d from '../../declarations';
+import { Diagnostic, Logger, LoggerTimeSpan, PrintLine } from '../../declarations';
 import color from 'ansi-colors';
 import fs from 'fs';
 import path from 'path';
@@ -8,7 +8,7 @@ export function getNodeLogger() {
   return new NodeLogger();
 }
 
-export class NodeLogger implements d.Logger {
+export class NodeLogger implements Logger {
   private _level = 'info';
   private writeLogQueue: string[] = [];
   buildLogFilePath: string = null;
@@ -266,11 +266,11 @@ export class NodeLogger implements d.Logger {
     return LOG_LEVELS.indexOf(level) >= LOG_LEVELS.indexOf(this.level);
   }
 
-  createTimeSpan(startMsg: string, debug = false, appendTo?: string[]): d.LoggerTimeSpan {
+  createTimeSpan(startMsg: string, debug = false, appendTo?: string[]): LoggerTimeSpan {
     return new CmdTimeSpan(this, startMsg, debug, appendTo);
   }
 
-  printDiagnostics(diagnostics: d.Diagnostic[], cwd?: string) {
+  printDiagnostics(diagnostics: Diagnostic[], cwd?: string) {
     if (!diagnostics || diagnostics.length === 0) return;
 
     let outputLines: string[] = [''];
@@ -282,7 +282,7 @@ export class NodeLogger implements d.Logger {
     console.log(outputLines.join('\n'));
   }
 
-  printDiagnostic(diagnostic: d.Diagnostic, cwd?: string) {
+  printDiagnostic(diagnostic: Diagnostic, cwd?: string) {
     const outputLines = wordWrap([diagnostic.messageText], getColumns());
 
     let header = '';
@@ -603,8 +603,8 @@ export function wordWrap(msg: any[], columns: number) {
 }
 
 
-function prepareLines(orgLines: d.PrintLine[]) {
-  const lines: d.PrintLine[] = JSON.parse(JSON.stringify(orgLines));
+function prepareLines(orgLines: PrintLine[]) {
+  const lines: PrintLine[] = JSON.parse(JSON.stringify(orgLines));
 
   for (let i = 0; i < 100; i++) {
     if (!eachLineHasLeadingWhitespace(lines)) {
@@ -623,7 +623,7 @@ function prepareLines(orgLines: d.PrintLine[]) {
 }
 
 
-function eachLineHasLeadingWhitespace(lines: d.PrintLine[]) {
+function eachLineHasLeadingWhitespace(lines: PrintLine[]) {
   if (!lines.length) {
     return false;
   }

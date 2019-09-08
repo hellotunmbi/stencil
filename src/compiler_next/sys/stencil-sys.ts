@@ -50,8 +50,6 @@ const createStencilSys = (logger: d.Logger) => {
 
   const getCurrentDirectory = () => '/';
 
-  const getExecutingFilePath = () => '/stencil.js';
-
   const mkdirSync = (p: string, _opts?: d.CompilerSystemMakeDirectoryOptions) => {
     p = normalize(p);
     const item = items.get(p);
@@ -280,7 +278,6 @@ const createStencilSys = (logger: d.Logger) => {
     exit,
     fileWatchTimeout,
     getCurrentDirectory,
-    getExecutingFilePath,
     mkdir,
     mkdirSync,
     readdir,

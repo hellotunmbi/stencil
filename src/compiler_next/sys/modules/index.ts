@@ -1,4 +1,5 @@
 
+export * from './compiler-internal-dts';
 export * from './compiler-plugins';
 export * from './events';
 export * from './fs';

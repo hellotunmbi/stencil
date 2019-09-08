@@ -36,7 +36,7 @@ export default {
   ],
   plugins: [
     {
-      writeBundle() {
+      buildEnd() {
         // copy public d.ts
         const src = path.join(inputDir, 'public.d.ts');
         const dst = path.join(outputDir, 'index.d.ts');

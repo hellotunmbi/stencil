@@ -1,4 +1,4 @@
-import * as d from '../declarations';
+import { CompileOptions, CompileResults } from '../declarations';
 import { catchError } from '@utils';
 import { getCompileConfig, getCompileOptions, getTransformOptions } from './config/compile-module-options';
 import { getPublicCompilerMeta } from '../compiler/transformers/add-component-meta-static';
@@ -7,8 +7,8 @@ import { transformCssToEsm } from '../compiler/style/css-to-esm';
 import { transpileModule } from '../compiler/transpile/transpile-module';
 
 
-export const compile = async (code: string, opts: d.CompileOptions = {}): Promise<d.CompileResults> => {
-  const r: d.CompileResults = {
+export const compile = async (code: string, opts: CompileOptions = {}): Promise<CompileResults> => {
+  const r: CompileResults = {
     diagnostics: [],
     code: (typeof code === 'string' ? code : ''),
     map: null,
