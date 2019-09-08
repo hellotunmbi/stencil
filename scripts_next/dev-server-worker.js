@@ -1,10 +1,18 @@
+import path from 'path';
 import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import aliasPlugin from './helpers/alias-plugin';
 
+const inputDir = path.join(__dirname, '..', 'dist-ts', 'dev-server_next');
+const outputDir = path.join(__dirname, '..', 'dev-server');
+
 
 export default {
-  input: 'dist-ts/dev-server_next/index-worker.js',
+  input: path.join(inputDir, 'index-worker.js'),
+  output: {
+    format: 'cjs',
+    file: path.join(outputDir, 'server.js'),
+  },
   external: [
     'buffer',
     'http',
@@ -32,11 +40,5 @@ export default {
       preferBuiltins: true
     }),
     commonjs(),
-  ],
-  output: [
-    {
-      format: 'cjs',
-      file: 'dist/dev-server_next/server.js'
-    }
   ]
 };

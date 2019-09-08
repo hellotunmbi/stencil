@@ -3,13 +3,13 @@ import { ChildProcess, fork } from 'child_process';
 import path from 'path';
 
 
-export async function start(config: d.Config) {
+export async function start(config: d.DevServerConfig) {
   // using the path stuff below because after the the bundles are created
   // then these files are no longer relative to how they are in the src directory
-  config.devServer.devServerDir = __dirname;
+  config.devServerDir = __dirname;
 
   // get the path of the dev server module
-  const program = require.resolve(path.join(config.devServer.devServerDir, 'server.js'));
+  const program = require.resolve(path.join(config.devServerDir, 'server.js'));
 
   const args: string[] = [];
 
@@ -53,7 +53,7 @@ export async function start(config: d.Config) {
 }
 
 
-function startServer(config: d.Config, serverProcess: ChildProcess, devServerContext: DevServerMainContext) {
+function startServer(config: d.DevServerConfig, serverProcess: ChildProcess, devServerContext: DevServerMainContext) {
   return new Promise<d.DevServerConfig>((resolve, reject) => {
     serverProcess.stdout.on('data', (data: any) => {
       // the child server process has console logged data
@@ -73,10 +73,10 @@ function startServer(config: d.Config, serverProcess: ChildProcess, devServerCon
     // have the main process send a message to the child server process
     // to start the http and web socket server
     serverProcess.send({
-      startServer: config.devServer
+      startServer: config
     });
 
-    return config.devServer;
+    return config;
   });
 }
 
@@ -107,11 +107,11 @@ function emitMessageToClient(serverProcess: ChildProcess, devServerContext: DevS
 }
 
 
-function mainReceivedMessageFromWorker(config: d.Config, serverProcess: ChildProcess, devServerContext: DevServerMainContext, msg: d.DevServerMessage, resolve: (devServerConfig: any) => void) {
+function mainReceivedMessageFromWorker(config: d.DevServerConfig, serverProcess: ChildProcess, devServerContext: DevServerMainContext, msg: d.DevServerMessage, resolve: (devServerConfig: any) => void) {
   if (msg.serverStated) {
     // received a message from the child process that the server has successfully started
-    if (config.devServer.openBrowser && msg.serverStated.initialLoadUrl) {
-      config.sys.open(msg.serverStated.initialLoadUrl);
+    if (config.openBrowser && msg.serverStated.initialLoadUrl) {
+      // config.sys.open(msg.serverStated.initialLoadUrl);
     }
 
     // resolve that everything is good to go

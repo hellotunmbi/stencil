@@ -1,10 +1,22 @@
+import fs from 'fs-extra';
+import path from 'path';
 import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import aliasPlugin from './helpers/alias-plugin';
 
+const stencilPkg = require('../package.json');
+const inputDir = path.join(__dirname, '..', 'dist-ts', 'cli_next');
+const outputDir = path.join(__dirname, '..', 'cli');
+
+fs.emptyDirSync(outputDir);
+
 
 export default {
-  input: 'dist-ts/cli_next/index.js',
+  input: path.join(inputDir, 'index.js'),
+  output: {
+    format: 'cjs',
+    file: path.join(outputDir, 'index.js'),
+  },
   external: [
     'assert',
     'buffer',
@@ -24,22 +36,29 @@ export default {
   ],
   plugins: [
     {
+      writeBundle() {
+        // copy public d.ts
+        const src = path.join(inputDir, 'public.d.ts');
+        const dst = path.join(outputDir, 'index.d.ts');
+        fs.copyFileSync(src, dst);
+
+        // write package.json
+        const pkgPath = path.join(outputDir, 'package.json');
+        const pkgStr = JSON.stringify(PKG_JSON, null, 2);
+        fs.writeFileSync(pkgPath, pkgStr);
+      }
+    },
+    {
       resolveId(importee) {
         if (importee === '@compiler') {
           return {
-            id: '../../compiler/stencil_next.js',
+            id: '../compiler/stencil_next.js',
             external: true
           }
         }
         if (importee === '@dev-server') {
           return {
             id: '../dev-server/index.js',
-            external: true
-          }
-        }
-        if (importee === '@sys-node') {
-          return {
-            id: '../sys/node_next/index.js',
             external: true
           }
         }
@@ -56,9 +75,14 @@ export default {
       preferBuiltins: true
     }),
     commonjs(),
-  ],
-  output: {
-    format: 'cjs',
-    file: 'dist/cli_next/index.js'
-  }
+  ]
+};
+
+
+const PKG_JSON = {
+  "name": "@stencil/core/cli",
+  "version": stencilPkg.version,
+  "main": 'index.js',
+  "types": 'index.d.ts',
+  "private": true
 };

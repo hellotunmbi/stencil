@@ -5,7 +5,7 @@ import path from 'path';
 import ts from 'typescript';
 
 
-export function getSys(prcs: NodeJS.Process) {
+export function getNodeSys(prcs: NodeJS.Process) {
   const sys: d.CompilerSystem = {
     access(p) {
       return new Promise(resolve => {

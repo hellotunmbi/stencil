@@ -4,7 +4,6 @@
     "allowSyntheticDefaultImports": true,
     "allowUnreachableCode": false,
     "declaration": true,
-    "declarationDir": "dist",
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react",
@@ -31,8 +30,11 @@
       "@compiler": [
         "src/compiler_next/index.ts"
       ],
+      "@compiler-plugins": [
+        "src/compiler_next/sys/modules/compiler-plugins.ts"
+      ],
       "@dev-server": [
-        "src/dev-server_next/index-main.ts"
+        "src/dev-server_next/index.ts"
       ],
       "@mock-doc": [
         "src/mock-doc/index.ts"
@@ -40,20 +42,17 @@
       "@platform": [
         "src/client/index.ts"
       ],
-      "@rollup-plugins": [
-        "src/compiler_next/sys/modules/rollup-plugins.ts"
-      ],
       "@runtime": [
         "src/runtime/index.ts"
       ],
       "@testing": [
         "src/testing/index.ts"
       ],
+      "@stencil/core/internal": [
+        "src/index_next.ts"
+      ],
       "@stencil/core/testing": [
         "src/testing/index.ts"
-      ],
-      "@sys-node": [
-        "src/sys/node_next/index.ts"
       ],
       "@utils": [
         "src/utils/index.ts"
@@ -62,20 +61,15 @@
   },
 
   "files": [
-    "src/index.ts",
-    "src/cli_next/index.ts",
-    "src/client/index.ts",
-    "src/client/polyfills/css-shim/index.ts",
-    "src/compiler_next/index.ts",
+    "src/index_next.ts",
+    "src/cli_next/public.ts",
+    "src/compiler_next/public.ts",
     "src/compiler_next/sys/modules/index.ts",
-    "src/dev-server_next/index-main.ts",
+    "src/dev-server_next/public.ts",
     "src/dev-server_next/index-worker.ts",
     "src/dev-server_next/dev-client/index.ts",
-    "src/mock-doc/index.ts",
-    "src/runtime/index.ts",
-    "src/sys/node_next/index.ts",
-    "src/testing/index.ts",
-    "src/utils/index.ts"
+    "src/client/index.ts",
+    "src/client/polyfills/css-shim/index.ts",
   ],
   "include": [
     "types/*.d.ts"

@@ -8,7 +8,7 @@ import path from 'path';
 import ts from 'typescript';
 
 
-export function getConfig(prcs: NodeJS.Process, sys: d.CompilerSystem, logger: d.Logger, cwd: string) {
+export function getNodeConfig(prcs: NodeJS.Process, sys: d.CompilerSystem, logger: d.Logger, cwd: string) {
   let config: d.Config = null;
 
   try {

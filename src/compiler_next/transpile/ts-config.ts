@@ -1,18 +1,25 @@
 import * as d from '../../declarations';
-import path from 'path';
 import ts from 'typescript';
+import { getStencilCoreInternalPath, getStencilCorePath } from './preload-modules';
 
 
 export const getTsOptionsToExtend = (config: d.Config) => {
-  const outDir = path.join(config.cacheDir, 'dist');
-
   const tsOptions: ts.CompilerOptions = {
+    baseUrl: '.',
     experimentalDecorators: true,
     declaration: true,
     incremental: config.enableCache,
     module: ts.ModuleKind.ESNext,
-    noEmitOnError: false,
-    outDir,
+    noEmitOnError: true,
+    outDir: config.cacheDir,
+    paths: {
+      '@stencil/core/internal': [
+        getStencilCoreInternalPath(config)
+      ],
+      '@stencil/core': [
+        getStencilCorePath(config)
+      ]
+    },
     rootDir: config.rootDir,
     target: ts.ScriptTarget.ES2017,
   };

@@ -1,3 +1,12 @@
+import fs from 'fs-extra';
+import path from 'path';
+
+const inputDir = path.join(__dirname, '..', 'dist-ts', 'dev-server_next', 'dev-client');
+const outputDir = path.join(__dirname, '..', 'dev-server', 'dev-client');
+
+const srcStaticDir = path.join(__dirname, '..', 'src', 'dev-server_next', 'static');
+const dstStaticDir = path.join(outputDir, 'static');
+
 
 const banner = `<!doctype html><html><head><meta charset="utf-8">
 <title>Stencil Dev Server Connector &#9889;</title>
@@ -19,14 +28,21 @@ Stencil Dev Server Connector &#9889;
 
 
 export default {
-  input: 'dist-ts/dev-server_next/dev-client/index.js',
+  input: path.join(inputDir, 'index.js'),
   output: {
     format: 'cjs',
-    file: 'dist/dev-server_next/static/client-connector.html',
+    file: path.join(outputDir, 'static', 'client-connector.html'),
     banner,
     intro,
     outro,
     footer,
     strict: false
-  }
+  },
+  plugins: [
+    {
+      writeBundle() {
+        fs.copySync(srcStaticDir, dstStaticDir);
+      }
+    }
+  ]
 };

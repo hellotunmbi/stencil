@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 
-export function getLogger() {
+export function getNodeLogger() {
   return new NodeLogger();
 }
 

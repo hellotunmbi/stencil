@@ -7,7 +7,7 @@ import { imagePlugin } from '../../compiler/rollup-plugins/image-plugin';
 import { lazyComponentPlugin } from '../output-targets/component-lazy/lazy-component-plugin';
 import { lazyCorePlugin } from '../output-targets/component-lazy/lazy-core-plugin';
 import { pluginHelper } from '../../compiler/rollup-plugins/plugin-helper';
-import { rollupCommonjsPlugin, rollupJsonPlugin, rollupNodeResolvePlugin, rollupReplacePlugin } from '@rollup-plugins';
+import { rollupCommonjsPlugin, rollupJsonPlugin, rollupNodeResolvePlugin, rollupReplacePlugin } from '@compiler-plugins';
 import { RollupOptions, TreeshakingOptions, rollup } from 'rollup';
 import { stencilBuildConditionalsPlugin } from '../../compiler/rollup-plugins/stencil-build-conditionals';
 import { sysPlugin } from './sys-plugin';

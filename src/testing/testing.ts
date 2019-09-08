@@ -7,7 +7,7 @@ import { startPuppeteerBrowser } from './puppeteer/puppeteer-browser';
 import * as puppeteer from 'puppeteer';
 
 
-export class Testing implements d.Testing {
+export class Testing implements d.ITesting {
   isValid = false;
   compiler: d.Compiler;
   config: d.Config;

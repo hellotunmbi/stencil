@@ -1,19 +1,22 @@
 import * as d from '../declarations';
-import { getConfig, getCwd, getLogger, getSys } from '@sys-node';
-import { shouldIgnoreError } from '@utils';
+import { getNodeConfig } from './sys/node-config';
+import { getNodeCwd } from './sys/node-cwd';
+import { getNodeLogger } from './sys/node-logger';
+import { getNodeSys } from './sys/node-sys';
 import { runTask } from './tasks';
+import { shouldIgnoreError } from '@utils';
 import exit from 'exit';
 
 
 export async function run(prcs: NodeJS.Process) {
-  const logger = getLogger();
+  const logger = getNodeLogger();
 
   try {
-    setupProcess(prcs, logger);
+    setupNodeProcess(prcs, logger);
 
-    const cwd = getCwd(prcs);
-    const sys = getSys(prcs);
-    const config = getConfig(prcs, sys, logger, cwd);
+    const cwd = getNodeCwd(prcs);
+    const sys = getNodeSys(prcs);
+    const config = getNodeConfig(prcs, sys, logger, cwd);
 
     await runTask(prcs, config);
 
@@ -26,7 +29,7 @@ export async function run(prcs: NodeJS.Process) {
 }
 
 
-export function setupProcess(prcs: NodeJS.Process, logger: d.Logger) {
+export function setupNodeProcess(prcs: NodeJS.Process, logger: d.Logger) {
   try {
     const v = prcs.version.substring(1).split('.');
     const major = parseInt(v[0], 10);
@@ -59,4 +62,4 @@ export function setupProcess(prcs: NodeJS.Process, logger: d.Logger) {
   prcs.title = `Stencil`;
 }
 
-export { getConfig, getCwd, getLogger, getSys };
+export { getNodeConfig, getNodeCwd, getNodeLogger, getNodeSys };

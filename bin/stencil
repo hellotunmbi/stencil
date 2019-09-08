@@ -2,7 +2,7 @@
 'use strict';
 
 if (process.argv.indexOf('--next') > -1) {
-  require('../dist/cli_next/index.js').run(process);
+  require('../cli/index.js').run(process);
 
 } else {
   try {

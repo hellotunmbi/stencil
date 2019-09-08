@@ -1,23 +1,20 @@
 const fs = require('fs-extra');
+const glob = require('glob');
 const path = require('path');
 const webpack = require('webpack');
-const rollup = require('rollup');
-const rollupResolve = require('rollup-plugin-node-resolve');
-const rollupCommonjs = require('rollup-plugin-commonjs');
-const rollupJson = require('rollup-plugin-json');
-const glob = require('glob');
-const { relativeResolve } = require('./helpers/relative-resolve');
 
-const ROOT_DIR = path.join(__dirname, '..');
-const TRANSPILED_DIR = path.join(ROOT_DIR, 'dist-ts', 'sys', 'node_next');
-const DIST_DIR = path.join(ROOT_DIR, 'dist', 'sys', 'node_next');
+const outputDir = path.join(__dirname, '..', 'sys', 'node');
+const cachedDir = path.join(__dirname, '..', 'dist-ts', 'sys-node');
 
 
 function bundleExternal(entryFileName) {
   return new Promise(resolve => {
+    const outputFile = path.join(outputDir, entryFileName);
+    const cachedFile = path.join(cachedDir, entryFileName);
 
-    const alreadyExists = fs.existsSync(path.join(DIST_DIR, entryFileName));
-    if (alreadyExists) {
+    const cachedExists = fs.existsSync(cachedFile);
+    if (cachedExists) {
+      fs.copyFileSync(cachedFile, outputFile);
       resolve();
       return;
     }
@@ -29,9 +26,9 @@ function bundleExternal(entryFileName) {
     ];
 
     webpack({
-      entry: path.join(__dirname, '..', 'src', 'sys', 'node_next', 'bundles', entryFileName),
+      entry: path.join(__dirname, '..', 'src', 'sys', 'node', 'bundles', entryFileName),
       output: {
-        path: DIST_DIR,
+        path: outputDir,
         filename: entryFileName,
         libraryTarget: 'commonjs'
       },
@@ -42,7 +39,7 @@ function bundleExternal(entryFileName) {
         process: false,
         Buffer: false
       },
-      externals: function(_context, request, callback) {
+      externals(_context, request, callback) {
         if (request.match(/^(\.{0,2})\//)) {
           // absolute and relative paths are not externals
           return callback();
@@ -91,6 +88,7 @@ function bundleExternal(entryFileName) {
         throw webpackError
 
       } else {
+        fs.copyFileSync(outputFile, cachedFile);
         resolve();
       }
     });
@@ -98,82 +96,22 @@ function bundleExternal(entryFileName) {
 }
 
 
-async function bundleNodeSysMain() {
-  const inputPath = path.join(TRANSPILED_DIR, 'index.js');
-  const outputPath = path.join(DIST_DIR, 'index.js');
+(async () => {
+  fs.ensureDirSync(cachedDir);
+  fs.emptyDirSync(outputDir);
 
-  const rollupBuild = await rollup.rollup({
-    input: inputPath,
-    external: [
-      'assert',
-      'child_process',
-      'crypto',
-      'events',
-      'https',
-      'module',
-      'path',
-      'net',
-      'os',
-      'tty',
-      'typescript',
-      'url',
-      'util',
-    ],
-    plugins: [
-      {
-        resolveId(importee) {
-          if (importee === '@compiler') {
-            return {
-              id: '../../../compiler/stencil_next.js',
-              external: true
-            }
-          }
-          if (importee === 'resolve') {
-            return path.join(__dirname, 'helpers', 'resolve.js');
-          }
-          if (importee === '@mock-doc') {
-            return relativeResolve('../../mock-doc');
-          }
-          if (importee === '@utils') {
-            return relativeResolve('../../utils');
-          }
-          if (importee === 'fs') {
-            return {
-              id: './graceful-fs.js',
-              external: true
-            }
-          }
-        }
-      },
-      rollupResolve({
-        preferBuiltins: true,
-      }),
-      rollupCommonjs({
-        namedExports: {
-          'micromatch': [ 'matcher' ]
-        }
-      }),
-      rollupJson()
-    ],
-    onwarn: (message) => {
-      if (message.code === 'CIRCULAR_DEPENDENCY') return;
-      console.error(message);
-    }
-  });
+  await Promise.all([
+    bundleExternal('graceful-fs.js'),
+    bundleExternal('node-fetch.js'),
+    bundleExternal('open-in-editor.js'),
+    bundleExternal('websocket.js'),
+  ]);
 
-  const { output } = await rollupBuild.generate({
-    format: 'cjs',
-    file: outputPath
-  });
+  // open-in-editor's visualstudio.vbs file
+  const visualstudioVbsSrc = path.join(__dirname, '..', 'node_modules', 'open-in-editor', 'lib', 'editors', 'visualstudio.vbs');
+  const visualstudioVbsDesc = path.join(outputDir, 'visualstudio.vbs');
+  fs.copySync(visualstudioVbsSrc, visualstudioVbsDesc);
 
-  const outputText = output[0].code; //updateBuildIds(output[0].code);
-
-  await fs.ensureDir(path.dirname(outputPath));
-  await fs.writeFile(outputPath, outputText);
-}
-
-
-async function copyXdgOpen() {
   // copy open's xdg-open file
   const xdgOpenSrcPath = glob.sync('xdg-open', {
     cwd: path.join(__dirname, '..', 'node_modules', 'open'),
@@ -182,28 +120,6 @@ async function copyXdgOpen() {
   if (xdgOpenSrcPath.length !== 1) {
     throw new Error(`cannot find xdg-open`);
   }
-  const xdgOpenDestPath = path.join(DIST_DIR, 'xdg-open');
-  await fs.copy(xdgOpenSrcPath[0], xdgOpenDestPath);
-}
-
-
-async function copyOpenInEditor() {
-  // open-in-editor's visualstudio.vbs file
-  const visualstudioVbsSrc = path.join(__dirname, '..', 'node_modules', 'open-in-editor', 'lib', 'editors', 'visualstudio.vbs');
-  const visualstudioVbsDesc = path.join(DIST_DIR, 'visualstudio.vbs');
-  await fs.copy(visualstudioVbsSrc, visualstudioVbsDesc);
-}
-
-
-(async () => {
-  await Promise.all([
-    bundleExternal('graceful-fs.js'),
-    bundleExternal('node-fetch.js'),
-    bundleExternal('open-in-editor.js'),
-    bundleExternal('rollup-plugins.js'),
-    bundleExternal('websocket.js'),
-    bundleNodeSysMain(),
-    copyXdgOpen(),
-    copyOpenInEditor()
-  ]);
+  const xdgOpenDestPath = path.join(outputDir, 'xdg-open');
+  fs.copySync(xdgOpenSrcPath[0], xdgOpenDestPath);
 })();

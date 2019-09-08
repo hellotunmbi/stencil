@@ -20,7 +20,9 @@ dist-ts/
 **/www/build/
 
 # submodule packages
+/cli
 /compiler
+/dev-server
 /hydrate
 /internal
 /mock-doc

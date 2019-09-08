@@ -1,7 +1,7 @@
 import * as d from '../../declarations';
 import { buildEvents } from '../events';
 import { Cache } from '../cache';
-import { InMemoryFileSystem, normalizePath } from '@utils';
+import { InMemoryFs, normalizePath } from '@utils';
 
 
 /**
@@ -44,12 +44,12 @@ export class CompilerContext implements d.CompilerCtx {
   rollupCache = new Map();
 
   constructor(config: d.Config) {
-    const cacheFs = (config.enableCache && config.sys.fs != null) ? new InMemoryFileSystem(config.sys.fs, config.sys.path) : null;
+    const cacheFs = (config.enableCache && config.sys.fs != null) ? new InMemoryFs(config.sys.fs, config.sys.path) : null;
     this.cache = new Cache(config, cacheFs);
 
     this.cache.initCacheDir();
 
-    this.fs = (config.sys.fs != null ? new InMemoryFileSystem(config.sys.fs, config.sys.path) : null);
+    this.fs = (config.sys.fs != null ? new InMemoryFs(config.sys.fs, config.sys.path) : null);
   }
 
   reset() {

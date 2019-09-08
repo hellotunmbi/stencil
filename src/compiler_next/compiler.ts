@@ -6,7 +6,7 @@ import { getConfig } from './sys/config';
 import { inMemoryFileSystem } from './sys/in-memory-fs';
 import { patchFs } from './sys/fs-patch';
 import { patchTypescript } from './sys/typescript-patch';
-import { preloadModules } from './sys/preload-modules';
+import { preloadSourceModules } from './transpile/preload-modules';
 
 
 export const createCompiler = async (config: d.Config) => {
@@ -19,7 +19,7 @@ export const createCompiler = async (config: d.Config) => {
   const compilerCtx = new CompilerContext(config);
   compilerCtx.fs = inMemoryFileSystem(sys);
 
-  await preloadModules(config, compilerCtx);
+  await preloadSourceModules(config, compilerCtx);
 
   let watcher: d.CompilerWatcher = null;
 

@@ -1,6 +1,7 @@
 import { BuildEmitEvents } from './build-events';
 import { BuildLog, BuildResults } from './build';
 import { FsStats } from './file-system';
+import { Logger } from './logger';
 
 
 export interface DevServer extends BuildEmitEvents {
@@ -54,6 +55,7 @@ export interface DevServerConfig extends StencilDevServerConfig {
   excludeHmr?: string[];
   gzip?: boolean;
   historyApiFallback?: HistoryApiFallback;
+  logger?: Logger;
   openBrowser?: boolean;
   protocol?: 'http' | 'https';
 }

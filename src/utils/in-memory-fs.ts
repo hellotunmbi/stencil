@@ -2,7 +2,7 @@ import * as d from '../declarations';
 import { normalizePath } from './normalize-path';
 
 
-export class InMemoryFileSystem implements d.InMemoryFileSystem {
+export class InMemoryFs implements d.InMemoryFileSystem {
   private items: d.FsItems = new Map();
 
   constructor(public disk: d.FileSystem, private path: d.Path) {}

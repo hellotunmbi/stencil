@@ -1,6 +1,6 @@
 import * as d from '../declarations';
 import { BuildContext, Cache } from '../compiler';
-import { InMemoryFileSystem } from '@utils';
+import { InMemoryFs } from '@utils';
 import { MockWindow } from '@mock-doc';
 import { TestingFs } from './testing-fs';
 import { TestingLogger } from './testing-logger';
@@ -78,7 +78,7 @@ export function mockCompilerCtx() {
   Object.defineProperty(compilerCtx, 'fs', {
     get() {
       if (this._fs == null) {
-        this._fs = new InMemoryFileSystem(mockFs(), path);
+        this._fs = new InMemoryFs(mockFs(), path);
       }
       return this._fs;
     }
@@ -116,7 +116,7 @@ export function mockFs() {
 
 
 export function mockCache() {
-  const fs = new InMemoryFileSystem(mockFs(), path);
+  const fs = new InMemoryFs(mockFs(), path);
   const config = mockConfig();
   config.enableCache = true;
 
