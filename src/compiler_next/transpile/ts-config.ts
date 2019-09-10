@@ -1,11 +1,12 @@
 import * as d from '../../declarations';
+// import path from 'path';
+import { IS_NODE_ENV, IS_WEB_WORKER_ENV } from '../sys/environment';
+// import path from 'path';
 import ts from 'typescript';
-import { getStencilCoreInternalPath, getStencilCorePath } from './preload-modules';
 
 
 export const getTsOptionsToExtend = (config: d.Config) => {
   const tsOptions: ts.CompilerOptions = {
-    baseUrl: '.',
     experimentalDecorators: true,
     declaration: true,
     incremental: config.enableCache,
@@ -13,20 +14,36 @@ export const getTsOptionsToExtend = (config: d.Config) => {
     moduleResolution: ts.ModuleResolutionKind.NodeJs,
     noEmitOnError: true,
     outDir: config.cacheDir,
-    paths: {
-      '@stencil/core/internal': [
-        getStencilCoreInternalPath(config)
-      ],
-      '@stencil/core': [
-        getStencilCorePath(config)
-      ]
-    },
-    rootDir: config.rootDir,
+    rootDir: config.srcDir,
     target: ts.ScriptTarget.ES2017,
   };
 
+  if (!IS_NODE_ENV && IS_WEB_WORKER_ENV) {
+    // tsOptions.baseUrl = '.';
+    // tsOptions.paths = {
+    //   '@stencil/core/internal': [
+    //     'http://localhost/@stencil/core/internal/'
+    //   ],
+    //   '@stencil/core': [
+    //     'http://localhost/@stencil/core/'
+    //   ]
+    // };
+
+  }
+
   return tsOptions;
 };
+
+// const getStencilCoreInternalPath = (config: d.Config) => {
+//   return path.join(getStencilCorePath(config), 'internal');
+// };
+
+
+// const getStencilCorePath = (config: d.Config) => {
+//   const exePath = config.sys_next.getExecutingPath();
+
+//   return path.join(config.rootDir, 'node_modules', '@stencil', 'core');
+// };
 
 
 export const TSCONFIG_NAME_FALLBACK = `tsconfig.fallback.json`;

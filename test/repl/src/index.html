@@ -24,7 +24,7 @@
 
   <script>
     const repl = document.querySelector('stencil-repl');
-    repl.stencilUrl = '/';
+    repl.stencilCompilerPath = '/@stencil/core/compiler/stencil-browser.js';
     repl.appName = 'Hello Stencil';
     repl.inputs = [
 {
@@ -53,7 +53,19 @@ export const getText = () => {
   return text;
 };
 `
-}
+},
+{
+name: `/stencil.config.ts`,
+code:
+`
+import { Config } from '@stencil/core';
+
+export const config: any = {
+
+};
+
+`
+},
     ];
   </script>
 </body>

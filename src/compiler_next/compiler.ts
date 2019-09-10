@@ -13,7 +13,7 @@ export const createCompiler = async (config: Config) => {
   const sys = config.sys_next;
 
   patchFs(sys);
-  await patchTypescript(config, sys);
+  await patchTypescript(config);
 
   const compilerCtx = new CompilerContext(config);
   compilerCtx.fs = inMemoryFileSystem(sys);

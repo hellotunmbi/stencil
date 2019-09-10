@@ -1,24 +1,51 @@
-import { Build } from './build-conditionals';
-import { BuilderProgram, CustomTransformers } from 'typescript';
 import { BuildOnEvents, CompilerEventFileAdd, CompilerEventFileDelete, CompilerEventFileUpdate } from './build-events';
 import { Diagnostic } from './diagnostics';
 import { HotModuleReplacement } from './build';
-import { OutputOptions } from 'rollup';
-import { OutputTargetBaseNext } from './output-targets';
 
 
 export interface CompilerNext {
   build(): Promise<CompilerBuildResults>;
   createWatcher(): Promise<CompilerWatcher>;
   destroy(): Promise<void>;
-  sys: CompilerSystem;
+  sys: CompilerSystemAsync;
 }
 
-export interface CompilerSystem {
+export interface CompilerSystemAsync {
   /**
    * Always returns a boolean, does not throw.
    */
   access(p: string): Promise<boolean>;
+  /**
+   * Always returns a boolean if the directory was created or not. Does not throw.
+   */
+  mkdir(p: string, opts?: CompilerSystemMakeDirectoryOptions): Promise<boolean>;
+  /**
+   * All return paths are full normalized paths, not just the file names. Always returns an array, does not throw.
+   */
+  readdir(p: string): Promise<string[]>;
+  /**
+   * Returns undefined if file is not found. Does not throw.
+   */
+  readFile(p: string, encoding?: string): Promise<string>;
+  /**
+   * Always returns a boolean if the directory was removed or not. Does not throw.
+   */
+  rmdir(p: string): Promise<boolean>;
+  /**
+   * Returns undefined if stat not found. Does not throw.
+   */
+  stat(p: string): Promise<CompilerFsStats>;
+  /**
+   * Always returns a boolean if the file was removed or not. Does not throw.
+   */
+  unlink(p: string): Promise<boolean>;
+  /**
+   * Always returns a boolean if the file was written or not. Does not throw.
+   */
+  writeFile(p: string, content: string): Promise<boolean>;
+}
+
+export interface CompilerSystem extends CompilerSystemAsync {
   /**
    * Always returns a boolean, does not throw.
    */
@@ -27,12 +54,11 @@ export interface CompilerSystem {
    * Always returns a boolean if the files were copied or not. Does not throw.
    */
   copyFile(src: string, dst: string): Promise<boolean>;
-  exit(exitCode: number): void;
   getCurrentDirectory(): string;
   /**
-   * Always returns a boolean if the directory was created or not. Does not throw.
+   * The compiler's current executing path. Like __filename on NodeJS, and location.href in a web worker.
    */
-  mkdir(p: string, opts?: CompilerSystemMakeDirectoryOptions): Promise<boolean>;
+  getExecutingPath(): string;
   /**
    * Always returns a boolean if the directory was created or not. Does not throw.
    */
@@ -40,15 +66,7 @@ export interface CompilerSystem {
   /**
    * All return paths are full normalized paths, not just the file names. Always returns an array, does not throw.
    */
-  readdir(p: string): Promise<string[]>;
-  /**
-   * All return paths are full normalized paths, not just the file names. Always returns an array, does not throw.
-   */
   readdirSync(p: string): string[];
-  /**
-   * Returns undefined if file is not found. Does not throw.
-   */
-  readFile(p: string, encoding?: string): Promise<string>;
   /**
    * Returns undefined if file is not found. Does not throw.
    */
@@ -65,23 +83,11 @@ export interface CompilerSystem {
   /**
    * Always returns a boolean if the directory was removed or not. Does not throw.
    */
-  rmdir(p: string): Promise<boolean>;
-  /**
-   * Always returns a boolean if the directory was removed or not. Does not throw.
-   */
   rmdirSync(p: string): boolean;
   /**
    * Returns undefined if stat not found. Does not throw.
    */
-  stat(p: string): Promise<CompilerFsStats>;
-  /**
-   * Returns undefined if stat not found. Does not throw.
-   */
   statSync(p: string): CompilerFsStats;
-  /**
-   * Always returns a boolean if the file was removed or not. Does not throw.
-   */
-  unlink(p: string): Promise<boolean>;
   /**
    * Always returns a boolean if the file was removed or not. Does not throw.
    */
@@ -93,10 +99,6 @@ export interface CompilerSystem {
    * How many milliseconds to wait after a change before calling watch callbacks.
    */
   fileWatchTimeout: number;
-  /**
-   * Always returns a boolean if the file was written or not. Does not throw.
-   */
-  writeFile(p: string, content: string): Promise<boolean>;
   /**
    * Always returns a boolean if the file was written or not. Does not throw.
    */
@@ -122,17 +124,6 @@ export interface CompilerSystemMakeDirectoryOptions {
    * @default 0o777.
    */
   mode?: number;
-}
-
-
-export interface BundleOptions {
-  conditionals: Build;
-  id: string;
-  customTransformers: CustomTransformers;
-  inputs: {[entryKey: string]: string};
-  outputOptions: OutputOptions;
-  outputTargets: OutputTargetBaseNext[];
-  tsBuilder: BuilderProgram;
 }
 
 

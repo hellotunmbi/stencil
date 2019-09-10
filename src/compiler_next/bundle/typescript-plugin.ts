@@ -1,8 +1,8 @@
-import * as d from '../../declarations';
+import { BundleOptions } from './bundle-interface';
 import { Plugin, TransformResult } from 'rollup';
 
 
-export const typescriptPlugin = (bundleOpts: d.BundleOptions) => {
+export const typescriptPlugin = (bundleOpts: BundleOptions) => {
   const plugin: Plugin = {
     name: `${bundleOpts.id}TypescriptPlugin`,
 

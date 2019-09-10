@@ -1,4 +1,5 @@
 import * as d from '../../../declarations';
+import { BundleOptions } from '../../bundle/bundle-interface';
 import { bundleOutput } from '../../bundle/bundle-output';
 import { catchError } from '@utils';
 import { convertDecoratorsToStatic } from '../../../compiler/transformers/decorators-to-static/convert-decorators';
@@ -20,7 +21,7 @@ export const lazyOutput = async (config: d.Config, compilerCtx: d.CompilerCtx, b
 
     // const criticalBundles = getCriticalPath(buildCtx);
 
-    const bundleOpts: d.BundleOptions = {
+    const bundleOpts: BundleOptions = {
       id: 'lazy',
       conditionals: getBuildConditionals(config, buildCtx.components),
       customTransformers: getCustomTransformers(config, compilerCtx, buildCtx, tsBuilder),

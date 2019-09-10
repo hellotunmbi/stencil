@@ -1,5 +1,4 @@
 import * as d from '../../declarations';
-import { preloadSourceModules } from './preload-modules';
 import { TSCONFIG_NAME_FALLBACK, getTsConfigFallback, getTsOptionsToExtend } from './ts-config';
 import path from 'path';
 import ts from 'typescript';
@@ -52,8 +51,6 @@ export const createTsWatchProgram = async (config: d.Config, compilerCtx: d.Comp
     await buildCallback(tsBuilder);
     isRunning = false;
   };
-
-  await preloadSourceModules(config, tsWatchHost);
 
   return ts.createWatchProgram(tsWatchHost);
 };

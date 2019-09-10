@@ -28,7 +28,7 @@
         "src/compiler/app-core/build-conditionals.ts"
       ],
       "@compiler": [
-        "src/compiler_next/index.ts"
+        "src/compiler_next/index-core.ts"
       ],
       "@compiler-plugins": [
         "src/compiler_next/sys/modules/compiler-plugins.ts"
@@ -36,8 +36,11 @@
       "@dev-server": [
         "src/dev-server_next/index.ts"
       ],
-      "@internal-dts": [
-        "src/compiler_next/sys/modules/compiler-internal-dts.ts"
+      "@dts-core": [
+        "src/compiler_next/sys/modules/dts-core.ts"
+      ],
+      "@dts-internal": [
+        "src/compiler_next/sys/modules/dts-internal.ts"
       ],
       "@mock-doc": [
         "src/mock-doc/index.ts"
@@ -65,8 +68,10 @@
 
   "files": [
     "src/internal.ts",
+    "src/public.ts",
     "src/cli_next/public.ts",
-    "src/compiler_next/public.ts",
+    "src/compiler_next/public-browser.ts",
+    "src/compiler_next/public-core.ts",
     "src/compiler_next/sys/modules/index.ts",
     "src/dev-server_next/public.ts",
     "src/dev-server_next/index-worker.ts",

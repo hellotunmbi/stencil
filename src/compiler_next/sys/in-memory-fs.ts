@@ -148,7 +148,7 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
     await Promise.all(dirItems.map(async dirItem => {
       // let's loop through each of the files we've found so far
       // create an absolute path of the item inside of this directory
-      const absPath = normalizePath(path.join(dirPath, dirItem));
+      const absPath = normalizePath(dirItem);
       const relPath = normalizePath(path.relative(initPath, absPath));
 
       // get the fs stats for the item, could be either a file or directory

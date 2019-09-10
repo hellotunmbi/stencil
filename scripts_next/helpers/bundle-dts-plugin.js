@@ -13,7 +13,11 @@ export function bundleDts(inputFile) {
     filePath: inputFile
   }];
 
-  const outputCode = generateDtsBundle(entries);
+  let outputCode = generateDtsBundle(entries).join('\n');
+
+  outputCode = outputCode.replace(/\/\/\/ <reference types="node" \/>/g, '');
+  outputCode = outputCode.replace(/NodeJS.Process/g, 'any');
+
   fs.writeFileSync(cachedDtsOutput, outputCode);
   return outputCode;
 }

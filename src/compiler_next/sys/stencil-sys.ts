@@ -1,4 +1,5 @@
 import * as d from '../../declarations';
+import { IS_LOCATION_ENV, IS_NODE_ENV, IS_WEB_WORKER_ENV } from './environment';
 import { normalizePath } from '@utils';
 import path from 'path';
 
@@ -7,11 +8,11 @@ export const getStencilSys = (config: d.Config) => {
   if (config.sys_next) {
     return config.sys_next;
   }
-  return createStencilSys(config.logger);
+  return createStencilSys();
 };
 
 
-const createStencilSys = (logger: d.Logger) => {
+export const createStencilSys = () => {
   const items = new Map<string, FsItem>();
 
   const normalize = (p: string) => {
@@ -44,11 +45,17 @@ const createStencilSys = (logger: d.Logger) => {
     return true;
   };
 
-  const exit = (exitCode?: number) => {
-    logger.info(`exit: ${exitCode}`);
-  };
-
   const getCurrentDirectory = () => '/';
+
+  const getExecutingPath = () => {
+    if (IS_NODE_ENV) {
+      return __filename;
+    }
+    if (IS_WEB_WORKER_ENV && IS_LOCATION_ENV) {
+      return location.href;
+    }
+    throw new Error('unable to find executing path');
+  };
 
   const mkdirSync = (p: string, _opts?: d.CompilerSystemMakeDirectoryOptions) => {
     p = normalize(p);
@@ -275,9 +282,9 @@ const createStencilSys = (logger: d.Logger) => {
     access,
     accessSync,
     copyFile,
-    exit,
     fileWatchTimeout,
     getCurrentDirectory,
+    getExecutingPath,
     mkdir,
     mkdirSync,
     readdir,

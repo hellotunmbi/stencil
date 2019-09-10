@@ -10,7 +10,7 @@ export const getLogger = (config: d.Config) => {
 };
 
 
-const createLogger = () => {
+export const createLogger = () => {
   const logger: d.Logger = {
     level: '',
     info(...msg: any[]) {

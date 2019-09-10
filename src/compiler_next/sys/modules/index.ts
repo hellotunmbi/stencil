@@ -1,5 +1,6 @@
 
-export * from './compiler-internal-dts';
+export * from './dts-core';
+export * from './dts-internal';
 export * from './compiler-plugins';
 export * from './events';
 export * from './fs';

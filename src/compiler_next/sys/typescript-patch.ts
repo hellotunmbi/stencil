@@ -1,64 +1,95 @@
 import * as d from '../../declarations';
 import { dependencies } from './dependencies';
-import { IS_DOM_ENV, IS_NODE_ENV, IS_WEB_WORKER_ENV } from './environment';
+import { IS_NODE_ENV, IS_WEB_WORKER_ENV } from './environment';
 import { normalizePath } from '@utils';
+import { version } from '../../version';
 import path from 'path';
 import ts from 'typescript';
 
 
-export const patchTypescript = async (config: d.Config, sys: d.CompilerSystem) => {
-  const tsUrl = dependencies.find(dep => dep.name === 'typescript').url;
-
-  const loadedTs = await loadTypescript(tsUrl);
+export const patchTypescript = async (config: d.Config) => {
+  const loadedTs = getTypescript();
 
   Object.assign(ts, loadedTs);
 
   if (!ts.sys) {
-    ts.sys = createTsSys(sys, tsUrl);
+    ts.sys = createTsSys(config);
+  }
+
+  const compilerPath = config.sys_next.getExecutingPath();
+  if (!IS_NODE_ENV && IS_WEB_WORKER_ENV && compilerPath.startsWith('http')) {
+    const orgResolveModuleName = ts.resolveModuleName;
+
+    ts.resolveModuleName = function (moduleName, containingFile, compilerOptions, host, cache, redirectedReference) {
+
+      if (moduleName.startsWith('@stencil/core')) {
+        const stencilCoreRoot = new URL('../', compilerPath).href;
+
+        if (moduleName === '@stencil/core') {
+          return {
+            resolvedModule: {
+              extension: ts.Extension.Dts,
+              resolvedFileName: new URL('./dist/index.d.ts', stencilCoreRoot).href,
+              packageId: {
+                name: moduleName,
+                subModuleName: '',
+                version: version
+              }
+            }
+          };
+        }
+
+        if (moduleName === '@stencil/core/internal') {
+          return {
+            resolvedModule: {
+              extension: ts.Extension.Dts,
+              resolvedFileName: new URL('./internal/index.d.ts', stencilCoreRoot).href,
+              packageId: {
+                name: moduleName,
+                subModuleName: '',
+                version: version
+              }
+            }
+          };
+        }
+      }
+
+      return orgResolveModuleName(moduleName, containingFile, compilerOptions, host, cache, redirectedReference);
+    };
+
+    loadedTs.resolveModuleName = ts.resolveModuleName;
   }
 
   config.tsconfig = getTsConfigPath(config);
 };
 
 
-const loadTypescript = async (tsUrl: string) => {
+export const getTypescript = () => {
+  const tsDep = dependencies.find(dep => dep.name === 'typescript');
 
   if (IS_NODE_ENV) {
     // NodeJS
     return require('typescript');
   }
 
-  if (globalThis.ts) {
-    // "ts" already on global scope
+  if (globalThis.ts && globalThis.ts.version === tsDep.version) {
+    // "ts" already on global scope (and it's the correct version)
     return globalThis.ts;
   }
 
   if (IS_WEB_WORKER_ENV) {
     // browser web worker
-    (self as any).importScripts(tsUrl);
+    (self as any).importScripts(tsDep.url);
     return globalThis.ts;
-  }
-
-  if (IS_DOM_ENV) {
-    // browser main thread
-    return new Promise((resolve, reject) => {
-      const tsScript = document.createElement('script');
-      tsScript.src = tsUrl;
-      tsScript.onload = () => {
-        setTimeout(() => {
-          resolve(globalThis.ts);
-        });
-      };
-      tsScript.onerror = reject;
-      document.head.appendChild(tsScript);
-    });
   }
 
   throw new Error(`typescript: missing global "ts" variable`);
 };
 
 
-const createTsSys = (stencilSys: d.CompilerSystem, tsUrl: string) => {
+const createTsSys = (config: d.Config) => {
+  const tsDep = dependencies.find(dep => dep.name === 'typescript');
+  const stencilSys = config.sys_next;
 
   const visitDirectory = (matchingPaths: Set<string>, p: string, extensions: ReadonlyArray<string>) => {
     const dirItems = stencilSys.readdirSync(p);
@@ -73,7 +104,7 @@ const createTsSys = (stencilSys: d.CompilerSystem, tsUrl: string) => {
       }
 
       const s = stencilSys.statSync(dirItem);
-      if (s.isDirectory) {
+      if (s.isDirectory()) {
         visitDirectory(matchingPaths, dirItem, extensions);
       }
     });
@@ -94,7 +125,7 @@ const createTsSys = (stencilSys: d.CompilerSystem, tsUrl: string) => {
       return false;
     },
     exit(exitCode) {
-      stencilSys.exit(exitCode);
+      config.logger.error(`typescript exit: ${exitCode}`);
     },
     fileExists(p) {
       const s = stencilSys.statSync(p);
@@ -104,7 +135,7 @@ const createTsSys = (stencilSys: d.CompilerSystem, tsUrl: string) => {
       return false;
     },
     getExecutingFilePath() {
-      return tsUrl;
+      return tsDep.url;
     },
     getCurrentDirectory() {
       return stencilSys.getCurrentDirectory();
@@ -122,19 +153,21 @@ const createTsSys = (stencilSys: d.CompilerSystem, tsUrl: string) => {
       return Array.from(matchingPaths);
     },
     readFile(p, encoding) {
-      if (p.startsWith('https:') || p.startsWith('http:')) {
+      let content = stencilSys.readFileSync(p, encoding);
+
+      if (typeof content !== 'string' && (p.startsWith('https:') || p.startsWith('http:'))) {
         if (IS_WEB_WORKER_ENV) {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', p, false); // synchronous request
-          xhr.send(null);
-          return xhr.responseText;
+          content = fetchRemoteContent(p);
+          if (typeof content === 'string') {
+            stencilSys.writeFileSync(p, content);
+          }
 
         } else {
           throw new Error(`stencil compiler must be ran from within a web worker to load: ${p}`);
         }
       }
 
-      return stencilSys.readFileSync(p, encoding);
+      return content;
     },
     resolvePath(p) {
       return path.resolve(p);
@@ -173,6 +206,21 @@ const createTsSys = (stencilSys: d.CompilerSystem, tsUrl: string) => {
     }
   };
   return tsSys;
+};
+
+
+const fetchRemoteContent = (url: string) => {
+  let content: string = undefined;
+  const xhr = new XMLHttpRequest();
+
+  xhr.open('GET', url, false); // synchronous request
+  xhr.send(null);
+
+  if (xhr.status >= 200 && xhr.status < 300) {
+    content = xhr.responseText;
+  }
+
+  return content;
 };
 
 

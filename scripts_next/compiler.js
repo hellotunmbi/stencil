@@ -15,74 +15,63 @@ const cjsOutro = fs.readFileSync(path.join(__dirname, 'helpers', 'compiler-cjs-o
 const typescriptPkg = fs.readJSONSync(path.join(require.resolve('typescript'), '..', '..', 'package.json'));
 const stencilPkg = require('../package.json');
 
-const fileName = 'stencil_next';
-const esmFileName = fileName + '.mjs';
-const cjsFileName = fileName + '.js';
-const dtsFileName = fileName + '.d.ts';
-const distDir = path.join(__dirname, '..', 'dist-ts');
-const inputDir = path.join(distDir, 'compiler_next');
-const outputDir = path.join(__dirname, '..', 'compiler');
-const internalDir = path.join(__dirname, '..', 'internal');
+const compilerFileName = 'stencil_next.js';
+const browserFileName = 'stencil-browser.js';
+const compilerDts = compilerFileName.replace('.js', '.d.ts');
+const browserDts = browserFileName.replace('.js', '.d.ts');
+const inputTsDir = path.join(__dirname, '..', 'dist-ts');
+const outputDistDir = path.join(__dirname, '..', 'dist');
+const inputComilerDir = path.join(inputTsDir, 'compiler_next');
+const outputCompilerDir = path.join(__dirname, '..', 'compiler');
+const outputInternalDir = path.join(__dirname, '..', 'internal');
+const replaceData = {
+  '0.0.0-stencil-dev': stencilPkg.version,
+  '__VERSION:TYPESCRIPT__': typescriptPkg.version,
+};
 
-fs.emptyDirSync(outputDir);
-fs.ensureDirSync(internalDir);
+fs.emptyDirSync(outputCompilerDir);
+fs.ensureDirSync(outputDistDir);
+fs.ensureDirSync(outputInternalDir);
 
 
-export default {
-  input: path.join(inputDir, 'index.js'),
-  output: [
-    {
-      format: 'es',
-      file: path.join(outputDir, esmFileName),
-      intro: compilerIntro
-    },
-    {
-      format: 'cjs',
-      file: path.join(outputDir, cjsFileName),
-      intro: cjsIntro + compilerIntro,
-      outro: cjsOutro,
-      strict: false
-    }
-  ],
+const stencilCoreCompiler = {
+  input: path.join(inputComilerDir, 'index-core.js'),
+  output: {
+    format: 'cjs',
+    file: path.join(outputCompilerDir, compilerFileName),
+    intro: cjsIntro + compilerIntro,
+    outro: cjsOutro,
+    strict: false
+  },
   plugins: [
     {
       buildStart() {
         // bundle dts
-        const entryDts = path.join(distDir, 'internal.d.ts');
+        const entryDts = path.join(inputTsDir, 'internal.d.ts');
         const dtsContent = bundleDts(entryDts);
-        const dstOutput = path.join(internalDir, 'index.d.ts');
+        const dstOutput = path.join(outputInternalDir, 'index.d.ts');
         fs.writeFileSync(dstOutput, dtsContent);
       },
       buildEnd() {
-        // copy compiler public d.ts
-        const src = path.join(inputDir, 'public.d.ts');
-        const dst = path.join(outputDir, dtsFileName);
-        fs.copyFileSync(src, dst);
+        // copy @stencil/core public d.ts
+        const srcCoreDtsPath = path.join(inputTsDir, 'public.d.ts');
+        const dstCoreDtsPath = path.join(outputDistDir, 'index.d.ts');
+        fs.copyFileSync(srcCoreDtsPath, dstCoreDtsPath);
+
+        // copy @stencil/core/compiler(core compiler) public d.ts
+        const srcCompilerDtsPath = path.join(inputComilerDir, 'public-core.d.ts');
+        const dstCompilerDtsPath = path.join(outputCompilerDir, compilerDts);
+        fs.copyFileSync(srcCompilerDtsPath, dstCompilerDtsPath);
+
+        // copy @stencil/core/compiler/(browser compiler) public d.ts
+        const srcBrowserDtsPath = path.join(inputComilerDir, 'public-browser.d.ts');
+        const dstBrowserDtsPath = path.join(outputCompilerDir, browserDts);
+        fs.copyFileSync(srcBrowserDtsPath, dstBrowserDtsPath);
 
         // write package.json
-        const pkgPath = path.join(outputDir, 'package.json');
+        const pkgPath = path.join(outputCompilerDir, 'package.json');
         const pkgStr = JSON.stringify(PKG_JSON, null, 2);
         fs.writeFileSync(pkgPath, pkgStr);
-      }
-    },
-    {
-      resolveId(id) {
-        if (id === '@internal-dts') return id;
-      },
-      async load(id) {
-        if (id === '@internal-dts') {
-          const dstOutput = path.join(internalDir, 'index');
-          const entryDts = path.join(distDir, 'components-internal.d.ts');
-          const componentsInternalDts = `
-            export { HTMLStencilElement, JSXBase } from '${dstOutput}';
-          `;
-          fs.writeFileSync(entryDts, componentsInternalDts);
-          let bundledDts = bundleDts(entryDts);
-          bundledDts = bundledDts.replace(/\t/g, '');
-          bundledDts = bundledDts.replace(/\n/g, ' ');
-          bundledDts = `export const internalDts = ${JSON.stringify(bundledDts)};\nexport default internalDts;`;
-          return bundledDts;
-        }
       }
     },
     {
@@ -101,10 +90,7 @@ export default {
       preferBuiltins: false
     }),
     commonjs(),
-    replace({
-      '0.0.0-stencil-dev': stencilPkg.version,
-      '__VERSION:TYPESCRIPT__': typescriptPkg.version,
-    }),
+    replace(replaceData),
     json()
   ],
   treeshake: {
@@ -113,11 +99,35 @@ export default {
 };
 
 
+const stencilBrowserCompiler = {
+  input: path.join(inputComilerDir, 'index-browser.js'),
+  output: {
+    format: 'es',
+    file: path.join(outputCompilerDir, browserFileName)
+  },
+  plugins: [
+    aliasPlugin,
+    nodeResolve({
+      preferBuiltins: false
+    }),
+    commonjs(),
+    modulesPlugin(),
+    replace(replaceData),
+  ]
+};
+
+
 const PKG_JSON = {
   "name": "@stencil/core/compiler",
   "version": stencilPkg.version,
-  "main": cjsFileName,
-  "module": esmFileName,
-  "types": dtsFileName,
+  "main": compilerFileName,
+  "browser": browserFileName,
+  "types": compilerDts,
   "private": true
 };
+
+
+export default [
+  stencilCoreCompiler,
+  stencilBrowserCompiler
+];

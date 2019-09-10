@@ -8,7 +8,7 @@ import { validateRollupConfig } from '../../compiler/config/validate-rollup-conf
 import { validateTesting } from '../../compiler/config/validate-testing';
 
 
-export function validateConfig(userConfig?: Config) {
+export const validateConfig = (userConfig?: Config) => {
   const config = Object.assign({}, userConfig || {}); // not positive it's json safe
   const diagnostics: Diagnostic[] = [];
 

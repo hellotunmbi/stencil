@@ -1,4 +1,5 @@
 import * as d from '../../../declarations';
+import { BundleOptions } from '../../bundle/bundle-interface';
 import { bundleOutput } from '../../bundle/bundle-output';
 import { catchError } from '@utils';
 import { convertDecoratorsToStatic } from '../../../compiler/transformers/decorators-to-static/convert-decorators';
@@ -14,7 +15,7 @@ export const customElementOutput = async (config: d.Config, compilerCtx: d.Compi
   const timespan = buildCtx.createTimeSpan(`generate custom element started`, true);
 
   try {
-    const bundleOpts: d.BundleOptions = {
+    const bundleOpts: BundleOptions = {
       id: 'customElement',
       conditionals: getBuildConditionals(config, buildCtx.components),
       customTransformers: getCustomTransformers(config, compilerCtx, buildCtx, tsBuilder),

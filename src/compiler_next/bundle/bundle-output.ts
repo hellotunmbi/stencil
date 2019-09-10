@@ -1,4 +1,5 @@
 import * as d from '../../declarations';
+import { BundleOptions } from './bundle-interface';
 import { createCustomResolver } from '../sys/resolve-module';
 import { createOnWarnFn, loadRollupDiagnostics } from '@utils';
 import { cssTransformer } from '../../compiler/rollup-plugins/css-transformer';
@@ -16,7 +17,7 @@ import { userIndexPlugin } from './user-index-plugin';
 import { writeBuildOutputs } from './write-outputs';
 
 
-export const bundleOutput = async (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx: d.BuildCtx, bundleOpts: d.BundleOptions) => {
+export const bundleOutput = async (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx: d.BuildCtx, bundleOpts: BundleOptions) => {
   try {
     const rollupOptions = getRollupOptions(config, compilerCtx, buildCtx, bundleOpts);
 
@@ -39,7 +40,7 @@ export const bundleOutput = async (config: d.Config, compilerCtx: d.CompilerCtx,
 };
 
 
-const getRollupOptions = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx: d.BuildCtx, bundleOpts: d.BundleOptions) => {
+const getRollupOptions = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx: d.BuildCtx, bundleOpts: BundleOptions) => {
 
   const rollupOptions: RollupOptions = {
 

@@ -1,7 +1,6 @@
 import { Build } from './build-conditionals';
 import { Diagnostic } from './diagnostics';
 import { Module } from './module';
-import { CompilerOptions } from 'typescript';
 
 
 export interface TranspileResults {
@@ -21,10 +20,11 @@ export interface ValidateTypesResults {
 }
 
 
-export interface TransformOptions extends CompilerOptions {
+export interface TransformOptions {
   coreImportPath: string;
   componentExport: 'lazy' | 'native' | 'customelement' | null;
   componentMetadata: 'runtimestatic' | 'compilerstatic' | null;
   proxy: 'defineproperty' | null;
   style: 'static' | null;
+  [key: string]: any;
 }

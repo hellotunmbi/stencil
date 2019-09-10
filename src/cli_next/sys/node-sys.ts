@@ -30,11 +30,11 @@ export function getNodeSys(prcs: NodeJS.Process) {
         });
       });
     },
-    exit(exitCode) {
-      prcs.exit(exitCode);
-    },
     getCurrentDirectory() {
       return prcs.cwd();
+    },
+    getExecutingPath() {
+      return __filename;
     },
     mkdir(p, opts) {
       return new Promise(resolve => {

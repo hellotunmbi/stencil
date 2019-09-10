@@ -19,7 +19,7 @@
     "paths": {
       "@stencil/core/testing": ["../../src/testing/index.ts"],
       "@stencil/core": ["../../dist"],
-      "@stencil/core/compiler": ["../../dist/compiler/index.js"],
+      "@stencil/core/compiler": ["../../dist/compiler"],
       "@stencil/core/internal": ["../../internal"]
     }
   },
