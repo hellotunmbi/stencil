@@ -190,7 +190,8 @@ export interface OutputTargetCustom extends OutputTargetBase {
 
 export interface OutputTargetDocsVscode extends OutputTargetBase {
   type: 'docs-vscode';
-  file?: string;
+  file: string;
+  sourceCodeBaseUrl?: string;
 }
 
 export interface OutputTargetDocsReadme extends OutputTargetBase {
