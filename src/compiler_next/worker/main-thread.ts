@@ -1,6 +1,7 @@
 import { CompileOptions, CompileResults, CompileScriptMinifyOptions, CompilerBuildResults, CompilerSystemAsync, CompilerWatcher, Config, Diagnostic } from '../../declarations';
 import { buildEvents } from '../../compiler/events';
 import { CompilerWorkerMsg, CompilerWorkerMsgType } from './worker-interfaces';
+import { version } from '../../version';
 
 
 export const createWorkerCompiler = async () => {
@@ -12,7 +13,7 @@ export const createWorkerCompiler = async () => {
   const events = buildEvents();
   const executingPath = import.meta.url;
   const workerUrl = new URL('./stencil_next.js', executingPath);
-  const worker = new Worker(workerUrl);
+  const worker = new Worker(workerUrl, { name: `@stencil/core/compiler@${version}` });
 
   const build = () => post({ type: CompilerWorkerMsgType.Build });
 
