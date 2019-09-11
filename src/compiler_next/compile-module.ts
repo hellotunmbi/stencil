@@ -24,7 +24,7 @@ export const compile = async (code: string, opts: CompileOptions = {}): Promise<
     r.inputOptions = getCompileOptions(opts, r.inputFilePath);
 
     if (r.inputOptions.type === 'tsx' || r.inputOptions.type === 'ts' || r.inputOptions.type === 'jsx') {
-      patchTypescript(config);
+      patchTypescript(config, r.diagnostics, null);
 
       const transformOpts = getTransformOptions(r.inputOptions);
 

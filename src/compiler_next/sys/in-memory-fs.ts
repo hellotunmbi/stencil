@@ -786,6 +786,7 @@ export const inMemoryFileSystem = (sys: d.CompilerSystem) => {
     remove,
     stat,
     statSync,
+    sys,
     writeFile,
     writeFiles
   };

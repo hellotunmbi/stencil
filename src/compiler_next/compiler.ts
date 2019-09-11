@@ -1,4 +1,4 @@
-import { CompilerNext, CompilerWatcher, Config } from '../declarations';
+import { CompilerNext, CompilerWatcher, Config, Diagnostic } from '../declarations';
 import { CompilerContext } from '../compiler/build/compiler-ctx';
 import { createFullBuild } from './build/full-build';
 import { createWatchBuild } from './build/watch-build';
@@ -9,14 +9,16 @@ import { patchTypescript } from './sys/typescript-patch';
 
 
 export const createCompiler = async (config: Config) => {
+  const diagnostics: Diagnostic[] = [];
   config = getConfig(config);
   const sys = config.sys_next;
 
   patchFs(sys);
-  await patchTypescript(config);
 
   const compilerCtx = new CompilerContext(config);
   compilerCtx.fs = inMemoryFileSystem(sys);
+
+  await patchTypescript(config, diagnostics, compilerCtx.fs);
 
   let watcher: CompilerWatcher = null;
 
@@ -37,6 +39,8 @@ export const createCompiler = async (config: Config) => {
     },
     sys
   };
+
+  config.logger.printDiagnostics(diagnostics);
 
   return compiler;
 };

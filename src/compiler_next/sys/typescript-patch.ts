@@ -1,14 +1,15 @@
 import * as d from '../../declarations';
+import { catchError, normalizePath } from '@utils';
 import { dependencies } from './dependencies';
 import { IS_NODE_ENV, IS_WEB_WORKER_ENV } from './environment';
-import { normalizePath } from '@utils';
+import { resolveModuleIdSync, resolveRemotePackageJsonSync } from './resolve-module';
 import { version } from '../../version';
 import path from 'path';
 import ts from 'typescript';
 
 
-export const patchTypescript = async (config: d.Config) => {
-  const loadedTs = getTypescript();
+export const patchTypescript = async (config: d.Config, diagnostics: d.Diagnostic[], inMemoryFs: d.InMemoryFileSystem) => {
+  const loadedTs = getTypescript(diagnostics);
 
   Object.assign(ts, loadedTs);
 
@@ -17,43 +18,62 @@ export const patchTypescript = async (config: d.Config) => {
   }
 
   const compilerPath = config.sys_next.getExecutingPath();
-  if (!IS_NODE_ENV && IS_WEB_WORKER_ENV && compilerPath.startsWith('http')) {
+  if (!IS_NODE_ENV && IS_WEB_WORKER_ENV && compilerPath.startsWith('http') && inMemoryFs) {
     const orgResolveModuleName = ts.resolveModuleName;
 
     ts.resolveModuleName = function (moduleName, containingFile, compilerOptions, host, cache, redirectedReference) {
+      if (!moduleName.startsWith('.') && !moduleName.startsWith('/')) {
 
-      if (moduleName.startsWith('@stencil/core')) {
-        const stencilCoreRoot = new URL('../', compilerPath).href;
+        if (moduleName.startsWith('@stencil/core')) {
+          const stencilCoreRoot = new URL('../', compilerPath).href;
 
-        if (moduleName === '@stencil/core') {
-          return {
-            resolvedModule: {
-              extension: ts.Extension.Dts,
-              resolvedFileName: new URL('./dist/index.d.ts', stencilCoreRoot).href,
-              packageId: {
-                name: moduleName,
-                subModuleName: '',
-                version: version
+          if (moduleName === '@stencil/core') {
+            return {
+              resolvedModule: {
+                extension: ts.Extension.Dts,
+                resolvedFileName: new URL('./dist/index.d.ts', stencilCoreRoot).href,
+                packageId: {
+                  name: moduleName,
+                  subModuleName: '',
+                  version: version
+                }
               }
-            }
-          };
+            };
+          }
+
+          if (moduleName === '@stencil/core/internal') {
+            return {
+              resolvedModule: {
+                extension: ts.Extension.Dts,
+                resolvedFileName: new URL('./internal/index.d.ts', stencilCoreRoot).href,
+                packageId: {
+                  name: moduleName,
+                  subModuleName: '',
+                  version: version
+                }
+              }
+            };
+          }
         }
 
-        if (moduleName === '@stencil/core/internal') {
+        const pkgJson = resolveRemotePackageJsonSync(config, inMemoryFs, moduleName);
+        if (pkgJson) {
+          const id = resolveModuleIdSync(inMemoryFs, moduleName, containingFile, ['.js', '.mjs']);
+          const id2 = resolveModuleIdSync(inMemoryFs, moduleName, containingFile, ['.js', '.mjs']);
+          console.log(id, id2);
           return {
             resolvedModule: {
-              extension: ts.Extension.Dts,
-              resolvedFileName: new URL('./internal/index.d.ts', stencilCoreRoot).href,
+              extension: ts.Extension.Js,
+              resolvedFileName: id,
               packageId: {
                 name: moduleName,
                 subModuleName: '',
-                version: version
+                version: pkgJson.version
               }
             }
           };
         }
       }
-
       return orgResolveModuleName(moduleName, containingFile, compilerOptions, host, cache, redirectedReference);
     };
 
@@ -64,26 +84,35 @@ export const patchTypescript = async (config: d.Config) => {
 };
 
 
-export const getTypescript = () => {
+export const getTypescript = (diagnostics: d.Diagnostic[]) => {
   const tsDep = dependencies.find(dep => dep.name === 'typescript');
 
-  if (IS_NODE_ENV) {
-    // NodeJS
-    return require('typescript');
-  }
+  try {
+    if (IS_NODE_ENV) {
+      // NodeJS
+      return require('typescript');
+    }
 
-  if (globalThis.ts && globalThis.ts.version === tsDep.version) {
-    // "ts" already on global scope (and it's the correct version)
-    return globalThis.ts;
-  }
+    if (globalThis.ts && globalThis.ts.version === tsDep.version) {
+      // "ts" already on global scope (and it's the correct version)
+      return globalThis.ts;
+    }
 
-  if (IS_WEB_WORKER_ENV) {
-    // browser web worker
-    (self as any).importScripts(tsDep.url);
-    return globalThis.ts;
-  }
+    if (IS_WEB_WORKER_ENV) {
+      // browser web worker
+      try {
+        (self as any).importScripts(tsDep.url);
+        return globalThis.ts;
+      } catch (e) {
+        throw new Error(`unable to load typescript: ${tsDep.url}`);
+      }
+    }
 
-  throw new Error(`typescript: missing global "ts" variable`);
+    throw new Error(`typescript: missing global "ts" variable`);
+
+  } catch (e) {
+    catchError(diagnostics, e);
+  }
 };
 
 

@@ -32,12 +32,15 @@ export const initWebWorker = (self: Worker) => {
   };
 
   const getCompiler = async () => {
-    if (!compiler) {
-      config.logger = logger;
-      config.sys_next = sys;
-      compiler = await createCompiler(config);
+    if (config) {
+      if (!compiler) {
+        config.logger = logger;
+        config.sys_next = sys;
+        compiler = await createCompiler(config);
+      }
+      return compiler;
     }
-    return compiler;
+    return null;
   };
 
   const loadConfig = async (msg: CompilerWorkerMsg) => {
@@ -70,7 +73,11 @@ export const initWebWorker = (self: Worker) => {
         return post({ stencilMsgId: msg.stencilMsgId, data: diagnostics });
       }
 
-      const ts = getTypescript();
+      const ts = getTypescript(diagnostics);
+      if (!ts) {
+        return post({ stencilMsgId: msg.stencilMsgId, data: diagnostics });
+      }
+
       const opts: TranspileOptions = {
         fileName: configPath,
         compilerOptions: {
@@ -131,33 +138,56 @@ export const initWebWorker = (self: Worker) => {
   };
 
   const build = async (msg: CompilerWorkerMsg) => {
-    const c = await getCompiler();
-    post({
-      stencilMsgId: msg.stencilMsgId,
-      data: await c.build()
-    });
+    const cmplr = await getCompiler();
+    if (cmplr) {
+      post({
+        stencilMsgId: msg.stencilMsgId,
+        data: await cmplr.build()
+      });
+
+    } else {
+      post({
+        stencilMsgId: msg.stencilMsgId,
+        data: [{ type: 'err', messageText: 'Compiler not loaded' } as d.Diagnostic]
+      });
+    }
   };
 
   const createWatcher = async (msg: CompilerWorkerMsg) => {
-    const c = await getCompiler();
-    watcher = await c.createWatcher();
-    watcher.on((eventName, data) => {
-      post({ onEventName: eventName, data });
-    });
-    post({ stencilMsgId: msg.stencilMsgId });
+    const cmplr = await getCompiler();
+    if (cmplr) {
+      watcher = await cmplr.createWatcher();
+      watcher.on((eventName, data) => {
+        post({ onEventName: eventName, data });
+      });
+      post({ stencilMsgId: msg.stencilMsgId });
+    } else {
+      post({
+        stencilMsgId: msg.stencilMsgId,
+        data: [{ type: 'err', messageText: 'Compiler not loaded' } as d.Diagnostic]
+      });
+    }
   };
 
   const watcherStart = (msg: CompilerWorkerMsg) => {
-    watcherCloseMsgId = msg.stencilMsgId;
-    watcher.start();
+    if (watcher) {
+      watcherCloseMsgId = msg.stencilMsgId;
+      watcher.start();
+
+    } else {
+      post({ stencilMsgId: msg.stencilMsgId });
+    }
   };
 
   const watcherClose = async (msg: CompilerWorkerMsg) => {
-    post({
-      stencilMsgId: watcherCloseMsgId,
-      data: await watcher.close()
-    });
-    watcher = watcherCloseMsgId = null;
+    if (watcher) {
+      post({
+        stencilMsgId: watcherCloseMsgId,
+        data: await watcher.close()
+      });
+      watcher = watcherCloseMsgId = null;
+    }
+
     post({ stencilMsgId: msg.stencilMsgId });
   };
 

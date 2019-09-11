@@ -1,63 +1,195 @@
 import * as d from '../../declarations';
 import { IS_FETCH_ENV, IS_NODE_ENV } from '../sys/environment';
 import { normalizePath } from '@utils';
+import path from 'path';
+import resolve from 'resolve';
+import { PackageJsonData } from '../../declarations';
 
 
-export const createCustomResolver = (inMemoryFs: d.InMemoryFileSystem) => {
+export const resolveRemotePackageJsonSync = (config: d.Config, inMemoryFs: d.InMemoryFileSystem, moduleId: string) => {
+  const filePath = path.join(config.rootDir, 'node_modules', moduleId, 'package.json');
+  let pkgJson = inMemoryFs.readFileSync(filePath);
+  if (!pkgJson) {
+    const url = new URL(`./${moduleId}/package.json`, NODE_MODULES_CDN_URL).href;
+    pkgJson = fetchModuleSync(inMemoryFs, url, filePath);
+  }
+  if (typeof pkgJson === 'string') {
+    return JSON.parse(pkgJson) as d.PackageJsonData;
+  }
+  return null;
+};
 
+
+export const resolveRemotePackageJsonAsync = async (config: d.Config, inMemoryFs: d.InMemoryFileSystem, moduleId: string) => {
+  const filePath = path.join(config.rootDir, 'node_modules', moduleId, 'package.json');
+  let pkgJson = await inMemoryFs.readFile(filePath);
+  if (!pkgJson) {
+    const url = new URL(`./${moduleId}/package.json`, NODE_MODULES_CDN_URL).href;
+    pkgJson = await fetchModuleAsync(inMemoryFs, url, filePath);
+  }
+  if (typeof pkgJson === 'string') {
+    return JSON.parse(pkgJson) as d.PackageJsonData;
+  }
+  return null;
+};
+
+
+export const resolveModuleIdSync = (inMemoryFs: d.InMemoryFileSystem, moduleId: string, containingFile: string, exts: string[]) => {
+  const opts = createCustomResolverSync(inMemoryFs, exts);
+  opts.basedir = path.dirname(containingFile);
+  return resolve.sync(moduleId, opts);
+};
+
+
+export const resolveModuleIdAync = (inMemoryFs: d.InMemoryFileSystem, moduleId: string, containingFile: string, exts: string[]) => {
+  const opts = createCustomResolverAsync(inMemoryFs, exts);
+  opts.basedir = path.dirname(containingFile);
+  return new Promise(r => {
+    resolve(moduleId, (_, resolved) => {
+      r(resolved);
+    });
+  });
+};
+
+
+export const createCustomResolverSync = (inMemoryFs: d.InMemoryFileSystem, exts: string[]) => {
   return {
 
-    extensions: ['.tsx', '.ts', '.mjs', '.js', '.json'],
+    isFile(filePath: string) {
+      filePath = normalizePath(filePath);
 
-    async isFile(p: string, cb: (err: any, isFile: boolean) => void) {
-      p = normalizePath(p);
-
-      const stat = await inMemoryFs.accessData(p);
-      if (stat.exists) {
-        return cb(null, stat.isFile);
+      const stat = inMemoryFs.statSync(filePath);
+      if (stat.isFile) {
+        return true;
       }
 
-      if (shouldFetchModule(p)) {
-        const pathParts = p.split('/');
-        if (pathParts.length >= 3) {
-          const pkgRootDir = `/${pathParts[1]}/${pathParts[2]}`;
-          const pkgRootDirData = await inMemoryFs.accessData(pkgRootDir);
+      if (shouldFetchModule(filePath)) {
+        const endsWithExt = exts.some(ext => filePath.endsWith(ext));
+        if (!endsWithExt) {
+          return false;
+        }
 
-          if (p.endsWith('package.json') || (pkgRootDirData.exists && pkgRootDirData.isDirectory)) {
-            const rsp = await fetchModule(p);
-            if (rsp.ok) {
-              await inMemoryFs.writeFile(p, rsp.text, { inMemoryOnly: true });
-              return cb(null, true);
-            }
-            return cb(rsp.text, false);
+        const url = getModuleFetchUrl(filePath);
+        const content = fetchModuleSync(inMemoryFs, url, filePath);
+        if (content) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+
+    isDirectory(dirPath: string) {
+      dirPath = normalizePath(dirPath);
+
+      const stat = inMemoryFs.statSync(dirPath);
+      if (stat.isDirectory) {
+        return true;
+      }
+
+      if (shouldFetchModule(dirPath)) {
+        if (dirPath === NODE_MODULES_FS_DIR) {
+          inMemoryFs.sys.mkdirSync(NODE_MODULES_FS_DIR);
+          inMemoryFs.clearFileCache(dirPath);
+          return true;
+        }
+
+        const endsWithExt = COMMON_DIR_MODULE_EXTS.some(ext => dirPath.endsWith(ext));
+        if (endsWithExt) {
+          return false;
+        }
+
+        const checkFileExists = (fileName: string) => {
+          const url = getModuleFetchUrl(dirPath) + '/' + fileName;
+          const filePath = dirPath + '/' + fileName;
+          const content = fetchModuleSync(inMemoryFs, url, filePath);
+          return (!!content);
+        };
+
+        return ['package.json', 'index.js', 'index.mjs'].some(checkFileExists);
+      }
+
+      return false;
+    },
+
+    readFileSync(p: string) {
+      const data = inMemoryFs.readFileSync(p);
+      if (typeof data === 'string') {
+        return data;
+      }
+
+      throw new Error(`file not found: ${p}`);
+    },
+
+    extensions: exts,
+
+    basedir: undefined as string
+  };
+};
+
+
+export const createCustomResolverAsync = (inMemoryFs: d.InMemoryFileSystem, exts: string[]) => {
+  return {
+
+    async isFile(filePath: string, cb: (err: any, isFile: boolean) => void) {
+      filePath = normalizePath(filePath);
+
+      const stat = await inMemoryFs.stat(filePath);
+      if (stat) {
+        cb(null, stat.isFile);
+        return;
+      }
+
+      if (shouldFetchModule(filePath)) {
+        const endsWithExt = exts.some(ext => filePath.endsWith(ext));
+        if (endsWithExt) {
+          const url = getModuleFetchUrl(filePath);
+          const content = await fetchModuleAsync(inMemoryFs, url, filePath);
+          const checkFileExists = (typeof content === 'string');
+          cb(null, checkFileExists);
+          return;
+        }
+      }
+
+      cb(null, false);
+    },
+
+    async isDirectory(dirPath: string, cb: (err: any, isDirectory: boolean) => void) {
+      dirPath = normalizePath(dirPath);
+
+      const stat = await inMemoryFs.stat(dirPath);
+      if (stat) {
+        cb(null, stat.isDirectory);
+        return;
+      }
+
+      if (shouldFetchModule(dirPath)) {
+        if (dirPath === NODE_MODULES_FS_DIR) {
+          inMemoryFs.sys.mkdirSync(NODE_MODULES_FS_DIR);
+          inMemoryFs.clearFileCache(dirPath);
+          cb(null, true);
+          return;
+        }
+
+        const endsWithExt = COMMON_DIR_MODULE_EXTS.some(ext => dirPath.endsWith(ext));
+        if (endsWithExt) {
+          cb(null, false);
+          return;
+        }
+
+        const checkFiles = ['package.json', 'index.js', 'index.mjs'];
+        for (const fileName of checkFiles) {
+          const url = getModuleFetchUrl(dirPath) + '/' + fileName;
+          const filePath = dirPath + '/' + fileName;
+          const content = await fetchModuleAsync(inMemoryFs, url, filePath);
+          if (typeof content === 'string') {
+            cb(null, true);
+            return;
           }
         }
       }
 
-      return cb(null, false);
-    },
-
-    async isDirectory(p: string, cb: (err: any, isDirectory: boolean) => void) {
-      p = normalizePath(p);
-
-      const stat = await inMemoryFs.accessData(p);
-      if (stat.exists) {
-        return cb(null, stat.isDirectory);
-      }
-
-      if (shouldFetchModule(p)) {
-        if (p === NODE_MODULES_FS_DIR) {
-          return cb(null, true);
-        }
-
-        const rsp = await fetchModule(p);
-        if (rsp.ok) {
-          return cb(null, true);
-        }
-        return cb(rsp.text, false);
-      }
-
-      return cb(null, false);
+      cb(null, false);
     },
 
     async readFile(p: string, cb: (err: any, data: string) => void) {
@@ -69,54 +201,103 @@ export const createCustomResolver = (inMemoryFs: d.InMemoryFileSystem) => {
       }
 
       return cb(`readFile not found: ${p}`, undefined);
-    }
+    },
+
+    extensions: exts,
+
+    basedir: undefined as string
   };
 };
 
 
-const fetchCache = new Map<string, Promise<FetchCache>>();
+const COMMON_DIR_MODULE_EXTS = ['.tsx', '.ts', '.mjs', '.js', '.jsx', '.json', '.md'];
 
-const fetchModule = (filePath: string) => {
-  const url = getPackageFetchUrl(filePath);
-  let fetchPromise = fetchCache.get(url);
+const failedFetchCache = new Set<string>();
+const fetchCacheAsync = new Map<string, Promise<string>>();
+const pkgVersions = new Map<string, string>();
+
+
+const fetchModuleSync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath: string) => {
+  if (failedFetchCache.has(url)) {
+    return undefined;
+  }
+
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, false);
+    xhr.send(null);
+
+    if (xhr.status >= 200 && xhr.status < 300) {
+      writeFetchSuccess(inMemoryFs, url, filePath, xhr.responseText);
+      return xhr.responseText;
+
+    } else {
+      failedFetchCache.add(url);
+    }
+
+  } catch (e) {
+    failedFetchCache.add(url);
+  }
+
+  return undefined;
+};
+
+
+const fetchModuleAsync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath: string) => {
+  if (failedFetchCache.has(url)) {
+    return Promise.resolve(undefined);
+  }
+
+  let fetchPromise = fetchCacheAsync.get(url);
 
   if (!fetchPromise) {
-    fetchPromise = fetch(url)
-      .then(async rsp => {
-        const data: FetchCache = {
-          ok: rsp.ok,
-          text: await rsp.text()
-        };
+    fetchPromise = new Promise(resolve => {
+      fetch(url)
+        .then(async rsp => {
+          if (rsp.status >= 200 && rsp.status < 300) {
+            const content = await rsp.text();
+            writeFetchSuccess(inMemoryFs, url, filePath, content);
+            resolve(content);
 
-        if (data.ok) {
-          if (url.endsWith('package.json')) {
-            cachePackageVersion(url, data.text);
+          } else {
+            failedFetchCache.add(url);
+            resolve(undefined);
           }
-
-        } else {
-          data.text = `${rsp.statusText} - ${url}`;
-        }
-
-        return data;
-      })
-      .catch(err => {
-        const data: FetchCache = {
-          ok: false,
-          text: err
-        };
-        return data;
-      });
-
-    fetchCache.set(url, fetchPromise);
+        })
+        .catch(() => {
+          failedFetchCache.add(url);
+          resolve(undefined);
+        });
+    });
+    fetchCacheAsync.set(url, fetchPromise);
   }
 
   return fetchPromise;
 };
 
+const writeFetchSuccess = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath: string, content: string) => {
+  if (url.endsWith('package.json')) {
+    try {
+      const pkgData = JSON.parse(content) as PackageJsonData;
+      if (pkgData.name && pkgData.version) {
+        pkgVersions.set(pkgData.name, pkgData.version);
+      }
+    } catch (e) {}
+  }
 
-const pkgVersions = new Map<string, string>();
+  let dir = path.dirname(filePath);
+  while (dir !== '/' && dir !== '') {
+    inMemoryFs.clearFileCache(dir);
+    inMemoryFs.sys.mkdirSync(dir);
+    dir = path.dirname(dir);
+  }
 
-const getPackageFetchUrl = (filePath: string) => {
+  inMemoryFs.clearFileCache(filePath);
+  inMemoryFs.sys.writeFileSync(filePath, content);
+};
+
+
+const getModuleFetchUrl = (filePath: string) => {
   // /node_modules/lodash/package.json
   let urlPath = filePath.replace(NODE_MODULES_FS_DIR + '/', '');
 
@@ -138,26 +319,8 @@ const getPackageFetchUrl = (filePath: string) => {
 };
 
 
-const cachePackageVersion = (url: string, pkgStr: string) => {
-  try {
-    const pkgData = JSON.parse(pkgStr);
-    if (pkgData.name && pkgData.version) {
-      pkgVersions.set(pkgData.name, pkgData.version);
-    }
-  } catch (e) {
-    console.error(`cachePackageVersion: ${url}, ${pkgStr}`, e);
-  }
-};
-
-
 const shouldFetchModule = (p: string) => (IS_FETCH_ENV && !IS_NODE_ENV && p.startsWith(NODE_MODULES_FS_DIR));
 
 
 const NODE_MODULES_FS_DIR = '/node_modules';
 const NODE_MODULES_CDN_URL = 'https://cdn.jsdelivr.net/npm/';
-
-
-interface FetchCache {
-  ok: boolean;
-  text: string;
-}

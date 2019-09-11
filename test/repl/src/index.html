@@ -31,15 +31,16 @@
 name: `/src/hello-world.tsx`,
 code:
 `
+import _ from 'lodash';
 import { Component } from '@stencil/core';
-import { getText } from './util';
+// import { getText } from './util';
 
 @Component({
   tag: 'hello-world'
 })
 export class HelloWorld {
   render() {
-    const val: string = getText();
+    const val: string = _.uniq([5, 5]);
     return val;
   }
 }

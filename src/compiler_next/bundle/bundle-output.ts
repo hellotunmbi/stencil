@@ -1,6 +1,6 @@
 import * as d from '../../declarations';
 import { BundleOptions } from './bundle-interface';
-import { createCustomResolver } from '../sys/resolve-module';
+import { createCustomResolverAsync } from '../sys/resolve-module';
 import { createOnWarnFn, loadRollupDiagnostics } from '@utils';
 import { cssTransformer } from '../../compiler/rollup-plugins/css-transformer';
 import { globalScriptsPlugin } from '../../compiler/rollup-plugins/global-scripts';
@@ -63,7 +63,7 @@ const getRollupOptions = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx
       rollupNodeResolvePlugin({
         mainFields: ['collection:main', 'jsnext:main', 'es2017', 'es2015', 'module', 'main'],
         browser: true,
-        customResolveOptions: createCustomResolver(compilerCtx.fs),
+        customResolveOptions: createCustomResolverAsync(compilerCtx.fs, ['.tsx', '.ts', '.mjs', '.js', '.json']),
         ...config.nodeResolve as any
       }),
       rollupJsonPlugin(),
