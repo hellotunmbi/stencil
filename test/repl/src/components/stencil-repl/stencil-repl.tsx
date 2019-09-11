@@ -33,7 +33,6 @@ export class StencilRepl {
     }));
 
     const diagnostics = await this.compiler.loadConfig({
-      configPath: '/stencil.config.ts',
       devMode: true,
       outputTargets: [
         { type: this.selectedTarget as any }
