@@ -4,6 +4,7 @@ export interface CompilerWorkerMsg {
   type?: CompilerWorkerMsgType;
   path?: string;
   code?: string;
+  config?: any;
   opts?: any;
   content?: string;
   data?: any;

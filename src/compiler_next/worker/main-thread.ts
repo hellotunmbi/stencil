@@ -44,10 +44,9 @@ export const createWorkerCompiler = async () => {
     writeFile: (path, content) => post({ type: CompilerWorkerMsgType.SysWriteFile, path, content }),
   };
 
-  const loadConfig = (path: string, opts: Config = {}) => post({
+  const loadConfig = (config: Config) => post({
     type: CompilerWorkerMsgType.LoadConfig,
-    path,
-    opts
+    config
   });
 
   const compileModule = (code: string, opts: CompileOptions = {}) => post({
@@ -119,6 +118,6 @@ export interface WorkerCompiler {
   createWatcher(): Promise<CompilerWatcher>;
   destroy(): Promise<void>;
   getMinifyScriptOptions(): Promise<CompileScriptMinifyOptions>;
-  loadConfig(configPath: string, extendConfigOptions?: Config): Promise<Diagnostic[]>;
+  loadConfig(config?: Config): Promise<Diagnostic[]>;
   sys: CompilerSystemAsync;
 }

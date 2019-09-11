@@ -59,8 +59,6 @@ export const patchTypescript = async (config: d.Config, diagnostics: d.Diagnosti
         const pkgJson = resolveRemotePackageJsonSync(config, inMemoryFs, moduleName);
         if (pkgJson) {
           const id = resolveModuleIdSync(inMemoryFs, moduleName, containingFile, ['.js', '.mjs']);
-          const id2 = resolveModuleIdSync(inMemoryFs, moduleName, containingFile, ['.js', '.mjs']);
-          console.log(id, id2);
           return {
             resolvedModule: {
               extension: ts.Extension.Js,

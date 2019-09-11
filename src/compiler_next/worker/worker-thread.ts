@@ -45,31 +45,24 @@ export const initWebWorker = (self: Worker) => {
 
   const loadConfig = async (msg: CompilerWorkerMsg) => {
     const diagnostics: d.Diagnostic[] = [];
-    let configPath = msg.path;
+    const userConfig = (msg.config || {}) as d.Config;
+
+    if (typeof userConfig.configPath === 'string') {
+      if (!path.isAbsolute(userConfig.configPath)) {
+        userConfig.configPath = path.join('/', userConfig.configPath);
+      }
+    } else {
+      userConfig.configPath = '/stencil.config.ts';
+      await sys.writeFile(userConfig.configPath, `export const config: any = {};`);
+    }
 
     try {
-      if (typeof configPath !== 'string') {
-        const diagnostic = buildError(diagnostics);
-        diagnostic.header = `Stencil Config`;
-        diagnostic.messageText = `Missing stencil config file path`;
-        return post({ stencilMsgId: msg.stencilMsgId, data: diagnostics });
-      }
-
-      configPath = normalizePath(configPath);
-
-      if (!path.isAbsolute(configPath)) {
-        const diagnostic = buildError(diagnostics);
-        diagnostic.header = `Stencil Config`;
-        diagnostic.messageText = `Stencil config must be an absolute path`;
-        return post({ stencilMsgId: msg.stencilMsgId, data: diagnostics });
-      }
-
-      const configContent = await sys.readFile(configPath);
+      const configContent = await sys.readFile(userConfig.configPath);
       if (typeof configContent !== 'string') {
         const diagnostic = buildError(diagnostics);
         diagnostic.header = `Stencil Config`;
-        diagnostic.messageText = `Stencil config file not found: ${configPath}`;
-        diagnostic.absFilePath = configPath;
+        diagnostic.messageText = `Stencil config file not found: ${userConfig.configPath}`;
+        diagnostic.absFilePath = userConfig.configPath;
         return post({ stencilMsgId: msg.stencilMsgId, data: diagnostics });
       }
 
@@ -79,7 +72,7 @@ export const initWebWorker = (self: Worker) => {
       }
 
       const opts: TranspileOptions = {
-        fileName: configPath,
+        fileName: userConfig.configPath,
         compilerOptions: {
           module: ts.ModuleKind.CommonJS,
           moduleResolution: ts.ModuleResolutionKind.NodeJs,
@@ -103,19 +96,20 @@ export const initWebWorker = (self: Worker) => {
       if (!c || !c.config) {
         const diagnostic = buildError(diagnostics);
         diagnostic.header = `Stencil Config`;
-        diagnostic.messageText = `Invalid stencil config: ${configPath}`;
-        diagnostic.absFilePath = configPath;
+        diagnostic.messageText = `Invalid stencil config: ${userConfig.configPath}`;
+        diagnostic.absFilePath = userConfig.configPath;
         return post({ stencilMsgId: msg.stencilMsgId, data: diagnostics });
       }
 
       config = c.config;
-      config.configPath = configPath;
-      config.rootDir = normalizePath(path.dirname(configPath));
+      config.configPath = userConfig.configPath;
+      config.rootDir = normalizePath(path.dirname(userConfig.configPath));
       config.cwd = config.rootDir;
 
-      if (msg.opts) {
-        Object.assign(config, msg.opts);
-      }
+      delete userConfig.configPath;
+      delete userConfig.rootDir;
+      delete userConfig.cwd;
+      Object.assign(config, userConfig);
 
       const validated = validateConfig(config);
       diagnostics.push(...validated.diagnostics);
