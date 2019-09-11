@@ -32,7 +32,7 @@ export const lazyCorePlugin = (_buildCtx: d.BuildCtx) => {
 // This is for webpack
 const EXTERNAL_ENTRY = `
 import globals from '${GLOBAL_BUNDLE_ID}';
-import { bootstrapLazy, patchEsm } from '@stencil/core/internal/client/index.mjs';
+import { bootstrapLazy, patchEsm } from '@stencil/core/internal/client_next/index.mjs';
 
 export const defineCustomElements = (win, options) => {
   return patchEsm().then(() => {
@@ -45,7 +45,7 @@ export const defineCustomElements = (win, options) => {
 
 const BROWSER_ENTRY = `
 import globals from '${GLOBAL_BUNDLE_ID}';
-import { bootstrapLazy, patchBrowser } from '@stencil/core/internal/client/index.mjs';
+import { bootstrapLazy, patchBrowser } from '@stencil/core/internal/client_next/index.mjs';
 patchBrowser().then(options => {
   globals();
   return bootstrapLazy([/*!__STENCIL_LAZY_DATA__*/], options);

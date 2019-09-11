@@ -199,9 +199,16 @@ const fetchCacheAsync = new Map<string, Promise<string>>();
 const pkgVersions = new Map<string, string>();
 
 const skipFetch = (url: string, filePath: string) => {
-  if (known404Urls.has(url) || known404Paths.has(filePath)) {
+  if (known404Urls.has(url)) {
     return true;
   }
+
+  if (filePath.endsWith('.ts') || filePath.endsWith('.tsx')) {
+    // don't bother trying to resolve  node_module packages w/ typescript files
+    // they should already be .js files
+    return true;
+  }
+
   const pathParts = filePath.split('/');
   const secondToLast = pathParts[pathParts.length - 2];
   const lastPart = pathParts[pathParts.length - 1];
@@ -211,6 +218,7 @@ const skipFetch = (url: string, filePath: string) => {
     // we just already know this is bogus, so don't bother
     return true;
   }
+
   return false;
 };
 
@@ -327,30 +335,6 @@ const getModuleFetchUrl = (config: d.Config, filePath: string) => {
 };
 
 const shouldFetchModule = (p: string) => (IS_FETCH_ENV && !IS_NODE_ENV && p.startsWith(NODE_MODULES_FS_DIR));
-
-// prepopulating paths we know node resolve will check, but we already know they don't exist
-const known404Paths = new Set<string>();
-
-const addKnownFileSkips = (filePath: string) => {
-  // /node_modules/@stencil/core/internal/client
-  known404Paths.add(filePath + '.js');
-  known404Paths.add(filePath + '.ts');
-  known404Paths.add(filePath + '.tsx');
-  known404Paths.add(filePath + '.jsx');
-  known404Paths.add(filePath + '.json');
-  known404Paths.add(filePath + '/index.js');
-  known404Paths.add(filePath + '/index.ts');
-  known404Paths.add(filePath + '/index.tsx');
-  known404Paths.add(filePath + '/index.jsx');
-  known404Paths.add(filePath + '/index.json');
-  known404Paths.add(filePath + '/package.json');
-};
-addKnownFileSkips('/node_modules/@stencil/core/internal/client');
-known404Paths.add('/node_modules/@stencil/core/internal/client.mjs');
-
-addKnownFileSkips('/node_modules/@stencil/core/internal/client/build-conditionals');
-known404Paths.add('/node_modules/@stencil/core/internal/client/build-conditionals/index.mjs');
-
 
 const NODE_MODULES_FS_DIR = '/node_modules';
 const NODE_MODULES_CDN_URL = 'https://cdn.jsdelivr.net/npm/';

@@ -76,6 +76,7 @@
     "src/dev-server_next/public.ts",
     "src/dev-server_next/index-worker.ts",
     "src/dev-server_next/dev-client/index.ts",
+    "src/client/build-conditionals.ts",
     "src/client/index.ts",
     "src/client/polyfills/css-shim/index.ts",
   ],

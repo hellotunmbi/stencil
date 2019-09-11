@@ -8,6 +8,8 @@ import aliasPlugin from './helpers/alias-plugin';
 import { bundleDts } from './helpers/bundle-dts-plugin';
 import modulesPlugin from './helpers/modules-plugin';
 import { buildCompilerPlugins } from './helpers/compiler-plugins';
+import { rollup } from 'rollup';
+import ts from 'typescript';
 
 const compilerIntro = fs.readFileSync(path.join(__dirname, 'helpers', 'compiler-intro.js'), 'utf8');
 const cjsIntro = fs.readFileSync(path.join(__dirname, 'helpers', 'compiler-cjs-intro.js'), 'utf8');
@@ -19,11 +21,15 @@ const compilerFileName = 'stencil_next.js';
 const browserFileName = 'stencil-browser.js';
 const compilerDts = compilerFileName.replace('.js', '.d.ts');
 const browserDts = browserFileName.replace('.js', '.d.ts');
-const inputTsDir = path.join(__dirname, '..', 'dist-ts');
-const outputDistDir = path.join(__dirname, '..', 'dist');
+const rootDir = path.join(__dirname, '..');
+const srcDir = path.join(rootDir, 'src');
+const inputTsDir = path.join(rootDir, 'dist-ts');
+const outputDistDir = path.join(rootDir, 'dist');
+const inputClientDir = path.join(inputTsDir, 'client');
 const inputComilerDir = path.join(inputTsDir, 'compiler_next');
-const outputCompilerDir = path.join(__dirname, '..', 'compiler');
-const outputInternalDir = path.join(__dirname, '..', 'internal');
+const outputCompilerDir = path.join(rootDir, 'compiler');
+const outputInternalDir = path.join(rootDir, 'internal');
+const outputClientDir = path.join(outputInternalDir, 'client_next');
 const replaceData = {
   '0.0.0-stencil-dev': stencilPkg.version,
   '__VERSION:TYPESCRIPT__': typescriptPkg.version,
@@ -34,14 +40,16 @@ fs.ensureDirSync(outputDistDir);
 fs.ensureDirSync(outputInternalDir);
 
 
-const stencilCoreCompiler = {
+// core compiler build
+const coreCompiler = {
   input: path.join(inputComilerDir, 'index-core.js'),
   output: {
     format: 'cjs',
     file: path.join(outputCompilerDir, compilerFileName),
     intro: cjsIntro + compilerIntro,
     outro: cjsOutro,
-    strict: false
+    strict: false,
+    banner: getBanner('Stencil Compiler - ' + compilerFileName)
   },
   plugins: [
     {
@@ -68,9 +76,9 @@ const stencilCoreCompiler = {
         const dstBrowserDtsPath = path.join(outputCompilerDir, browserDts);
         fs.copyFileSync(srcBrowserDtsPath, dstBrowserDtsPath);
 
-        // write package.json
+        // write @stencil/core/compiler/package.json
         const pkgPath = path.join(outputCompilerDir, 'package.json');
-        const pkgStr = JSON.stringify(PKG_JSON, null, 2);
+        const pkgStr = JSON.stringify(COMPILER_PKG_JSON, null, 2);
         fs.writeFileSync(pkgPath, pkgStr);
       }
     },
@@ -99,11 +107,13 @@ const stencilCoreCompiler = {
 };
 
 
-const stencilBrowserCompiler = {
+// browser compiler build
+const browserCompiler = {
   input: path.join(inputComilerDir, 'index-browser.js'),
   output: {
     format: 'es',
-    file: path.join(outputCompilerDir, browserFileName)
+    file: path.join(outputCompilerDir, browserFileName),
+    banner: getBanner('Stencil Browser Compiler - ' + browserFileName)
   },
   plugins: [
     aliasPlugin,
@@ -117,7 +127,93 @@ const stencilBrowserCompiler = {
 };
 
 
-const PKG_JSON = {
+// internal client runtime build
+const internalClientRuntime = {
+  input: {
+    'index': path.join(inputClientDir, 'index.js'),
+    'build-conditionals': path.join(inputClientDir, 'build-conditionals.js'),
+  },
+  output: {
+    format: 'es',
+    dir: outputClientDir,
+    entryFileNames: '[name].mjs',
+    chunkFileNames: '[name].[hash].mjs',
+    banner: getBanner('Stencil Client Runtime')
+  },
+  plugins: [
+    {
+      buildStart() {
+        fs.emptyDirSync(outputClientDir);
+      },
+      buildEnd() {
+        // write @stencil/core/internal/client/package.json
+        const pkgPath = path.join(outputClientDir, 'package.json');
+        const pkgStr = JSON.stringify(INTERNAL_CLIENT_PKG_JSON, null, 2);
+        fs.writeFileSync(pkgPath, pkgStr);
+      }
+    },
+    {
+      resolveId(importee) {
+        if (importee === '@build-conditionals') {
+          return {
+            id: '@stencil/core/internal/client_next/build-conditionals.mjs',
+            external: true
+          }
+        }
+        if (importee === '@platform') {
+          return path.join(inputTsDir, 'client', 'index.js');
+        }
+        if (importee === '@runtime') {
+          return path.join(inputTsDir, 'runtime', 'index.js');
+        }
+        if (importee === '@utils') {
+          return path.join(inputTsDir, 'utils', 'index.js');
+        }
+      }
+    },
+    {
+      resolveId(importee) {
+        if (importee === './polyfills/css-shim.js') {
+          return importee;
+        }
+      },
+      async load(id) {
+        // bundle the css-shim into one file
+        if (id === './polyfills/css-shim.js') {
+          const rollupBuild = await rollup({
+            input: path.join(inputClientDir, 'polyfills', 'css-shim', 'index.js'),
+            onwarn: (message) => {
+              if (/top level of an ES module/.test(message)) return;
+              console.error(message);
+            }
+          });
+
+          const { output } = await rollupBuild.generate({ format: 'es' });
+
+          const transpileToEs5 = ts.transpileModule(output[0].code, {
+            compilerOptions: {
+              target: ts.ScriptTarget.ES5
+            }
+          });
+
+          return transpileToEs5.outputText;
+        }
+      }
+    },
+    {
+      resolveId(importee) {
+        if (importee.startsWith('./polyfills')) {
+          const fileName = path.basename(importee);
+          return path.join(srcDir, 'client', 'polyfills', fileName);
+        }
+      }
+    },
+    replace(replaceData),
+  ]
+};
+
+
+const COMPILER_PKG_JSON = {
   "name": "@stencil/core/compiler",
   "version": stencilPkg.version,
   "main": compilerFileName,
@@ -127,7 +223,26 @@ const PKG_JSON = {
 };
 
 
+const INTERNAL_CLIENT_PKG_JSON = {
+  "name": "@stencil/core/internal/client_next",
+  "version": stencilPkg.version,
+  "main": 'index.mjs',
+  "private": true
+};
+
+
+function getBanner(fileName) {
+  return [
+    `/**`,
+    ` ${fileName} v${stencilPkg.version}`,
+    ` MIT Licensed, https://stenciljs.com`,
+    `*/`
+  ].join('\n');
+}
+
+
 export default [
-  stencilCoreCompiler,
-  stencilBrowserCompiler
+  coreCompiler,
+  browserCompiler,
+  internalClientRuntime
 ];

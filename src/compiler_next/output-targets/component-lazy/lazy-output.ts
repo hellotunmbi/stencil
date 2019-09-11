@@ -89,7 +89,7 @@ const getCustomTransformers = (config: d.Config, compilerCtx: d.CompilerCtx, bui
   const tsTypeChecker = tsBuilder.getProgram().getTypeChecker();
 
   const transformOpts: d.TransformOptions = {
-    coreImportPath: '@stencil/core/internal/client',
+    coreImportPath: '@stencil/core/internal/client_next/index.mjs',
     componentExport: 'lazy',
     componentMetadata: null,
     proxy: null,
