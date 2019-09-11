@@ -9,12 +9,11 @@ import * as d from '@stencil/core/internal';
 })
 export class StencilRepl {
 
-  @Prop() appName: string = 'Stencil App';
-  @Prop() inputs: InputFile[] = [];
+  @Prop() appName: string = 'Stencil Components';
   @Prop() stencilCompilerPath = `http://cdn.jsdelivr.net/npm/@stencil/core/compiler/stencil-browser.js`;
-
+  @Prop() selectedTarget = 'custom-element-next';
+  @Prop() inputs: InputFile[] = [];
   @State() outputs: OutputFile[] = [];
-  @State() selectedTarget = 'collection-next';
 
   compiler: d.WorkerCompiler;
 

@@ -44,6 +44,7 @@ export namespace Components {
   interface StencilRepl {
     'appName': string;
     'inputs': InputFile[];
+    'selectedTarget': string;
     'stencilCompilerPath': string;
   }
 }
@@ -144,6 +145,7 @@ declare namespace LocalJSX {
   interface StencilRepl extends JSXBase.HTMLAttributes<HTMLStencilReplElement> {
     'appName'?: string;
     'inputs'?: InputFile[];
+    'selectedTarget'?: string;
     'stencilCompilerPath'?: string;
   }
 

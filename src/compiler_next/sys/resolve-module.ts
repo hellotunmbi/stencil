@@ -20,29 +20,15 @@ export const resolveRemotePackageJsonSync = (config: d.Config, inMemoryFs: d.InM
 };
 
 
-export const resolveRemotePackageJsonAsync = async (config: d.Config, inMemoryFs: d.InMemoryFileSystem, moduleId: string) => {
-  const filePath = path.join(config.rootDir, 'node_modules', moduleId, 'package.json');
-  let pkgJson = await inMemoryFs.readFile(filePath);
-  if (!pkgJson) {
-    const url = new URL(`./${moduleId}/package.json`, NODE_MODULES_CDN_URL).href;
-    pkgJson = await fetchModuleAsync(inMemoryFs, url, filePath);
-  }
-  if (typeof pkgJson === 'string') {
-    return JSON.parse(pkgJson) as d.PackageJsonData;
-  }
-  return null;
-};
-
-
-export const resolveModuleIdSync = (inMemoryFs: d.InMemoryFileSystem, moduleId: string, containingFile: string, exts: string[]) => {
-  const opts = createCustomResolverSync(inMemoryFs, exts);
+export const resolveModuleIdSync = (config: d.Config, inMemoryFs: d.InMemoryFileSystem, moduleId: string, containingFile: string, exts: string[]) => {
+  const opts = createCustomResolverSync(config, inMemoryFs, exts);
   opts.basedir = path.dirname(containingFile);
   return resolve.sync(moduleId, opts);
 };
 
 
-export const resolveModuleIdAync = (inMemoryFs: d.InMemoryFileSystem, moduleId: string, containingFile: string, exts: string[]) => {
-  const opts = createCustomResolverAsync(inMemoryFs, exts);
+export const resolveModuleIdAync = (config: d.Config, inMemoryFs: d.InMemoryFileSystem, moduleId: string, containingFile: string, exts: string[]) => {
+  const opts = createCustomResolverAsync(config, inMemoryFs, exts);
   opts.basedir = path.dirname(containingFile);
   return new Promise(r => {
     resolve(moduleId, (_, resolved) => {
@@ -52,7 +38,7 @@ export const resolveModuleIdAync = (inMemoryFs: d.InMemoryFileSystem, moduleId: 
 };
 
 
-export const createCustomResolverSync = (inMemoryFs: d.InMemoryFileSystem, exts: string[]) => {
+export const createCustomResolverSync = (config: d.Config, inMemoryFs: d.InMemoryFileSystem, exts: string[]) => {
   return {
 
     isFile(filePath: string) {
@@ -69,7 +55,7 @@ export const createCustomResolverSync = (inMemoryFs: d.InMemoryFileSystem, exts:
           return false;
         }
 
-        const url = getModuleFetchUrl(filePath);
+        const url = getModuleFetchUrl(config, filePath);
         const content = fetchModuleSync(inMemoryFs, url, filePath);
         if (content) {
           return true;
@@ -100,7 +86,7 @@ export const createCustomResolverSync = (inMemoryFs: d.InMemoryFileSystem, exts:
         }
 
         const checkFileExists = (fileName: string) => {
-          const url = getModuleFetchUrl(dirPath) + '/' + fileName;
+          const url = getModuleFetchUrl(config, dirPath) + '/' + fileName;
           const filePath = dirPath + '/' + fileName;
           const content = fetchModuleSync(inMemoryFs, url, filePath);
           return (!!content);
@@ -121,29 +107,27 @@ export const createCustomResolverSync = (inMemoryFs: d.InMemoryFileSystem, exts:
       throw new Error(`file not found: ${p}`);
     },
 
-    extensions: exts,
-
-    basedir: undefined as string
-  };
+    extensions: exts
+  } as any;
 };
 
 
-export const createCustomResolverAsync = (inMemoryFs: d.InMemoryFileSystem, exts: string[]) => {
+export const createCustomResolverAsync = (config: d.Config, inMemoryFs: d.InMemoryFileSystem, exts: string[]) => {
   return {
 
     async isFile(filePath: string, cb: (err: any, isFile: boolean) => void) {
       filePath = normalizePath(filePath);
 
       const stat = await inMemoryFs.stat(filePath);
-      if (stat) {
-        cb(null, stat.isFile);
+      if (stat.isFile) {
+        cb(null, true);
         return;
       }
 
       if (shouldFetchModule(filePath)) {
         const endsWithExt = exts.some(ext => filePath.endsWith(ext));
         if (endsWithExt) {
-          const url = getModuleFetchUrl(filePath);
+          const url = getModuleFetchUrl(config, filePath);
           const content = await fetchModuleAsync(inMemoryFs, url, filePath);
           const checkFileExists = (typeof content === 'string');
           cb(null, checkFileExists);
@@ -158,8 +142,8 @@ export const createCustomResolverAsync = (inMemoryFs: d.InMemoryFileSystem, exts
       dirPath = normalizePath(dirPath);
 
       const stat = await inMemoryFs.stat(dirPath);
-      if (stat) {
-        cb(null, stat.isDirectory);
+      if (stat.isDirectory) {
+        cb(null, true);
         return;
       }
 
@@ -179,7 +163,7 @@ export const createCustomResolverAsync = (inMemoryFs: d.InMemoryFileSystem, exts
 
         const checkFiles = ['package.json', 'index.js', 'index.mjs'];
         for (const fileName of checkFiles) {
-          const url = getModuleFetchUrl(dirPath) + '/' + fileName;
+          const url = getModuleFetchUrl(config, dirPath) + '/' + fileName;
           const filePath = dirPath + '/' + fileName;
           const content = await fetchModuleAsync(inMemoryFs, url, filePath);
           if (typeof content === 'string') {
@@ -204,21 +188,34 @@ export const createCustomResolverAsync = (inMemoryFs: d.InMemoryFileSystem, exts
     },
 
     extensions: exts,
-
-    basedir: undefined as string
-  };
+  } as any;
 };
 
 
 const COMMON_DIR_MODULE_EXTS = ['.tsx', '.ts', '.mjs', '.js', '.jsx', '.json', '.md'];
 
-const failedFetchCache = new Set<string>();
+const known404Urls = new Set<string>();
 const fetchCacheAsync = new Map<string, Promise<string>>();
 const pkgVersions = new Map<string, string>();
 
+const skipFetch = (url: string, filePath: string) => {
+  if (known404Urls.has(url) || known404Paths.has(filePath)) {
+    return true;
+  }
+  const pathParts = filePath.split('/');
+  const secondToLast = pathParts[pathParts.length - 2];
+  const lastPart = pathParts[pathParts.length - 1];
+  if (secondToLast === 'node_modules' && COMMON_DIR_MODULE_EXTS.some(ext => lastPart.endsWith(ext))) {
+    // /node_modules/index.js
+    // /node_modules/lodash.js
+    // we just already know this is bogus, so don't bother
+    return true;
+  }
+  return false;
+};
 
 const fetchModuleSync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath: string) => {
-  if (failedFetchCache.has(url)) {
+  if (skipFetch(url, filePath)) {
     return undefined;
   }
 
@@ -232,11 +229,11 @@ const fetchModuleSync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath
       return xhr.responseText;
 
     } else {
-      failedFetchCache.add(url);
+      known404Urls.add(url);
     }
 
   } catch (e) {
-    failedFetchCache.add(url);
+    known404Urls.add(url);
   }
 
   return undefined;
@@ -244,7 +241,7 @@ const fetchModuleSync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath
 
 
 const fetchModuleAsync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath: string) => {
-  if (failedFetchCache.has(url)) {
+  if (skipFetch(url, filePath)) {
     return Promise.resolve(undefined);
   }
 
@@ -260,12 +257,12 @@ const fetchModuleAsync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePat
             resolve(content);
 
           } else {
-            failedFetchCache.add(url);
+            known404Urls.add(url);
             resolve(undefined);
           }
         })
         .catch(() => {
-          failedFetchCache.add(url);
+          known404Urls.add(url);
           resolve(undefined);
         });
     });
@@ -297,12 +294,23 @@ const writeFetchSuccess = (inMemoryFs: d.InMemoryFileSystem, url: string, filePa
 };
 
 
-const getModuleFetchUrl = (filePath: string) => {
+const getModuleFetchUrl = (config: d.Config, filePath: string) => {
   // /node_modules/lodash/package.json
-  let urlPath = filePath.replace(NODE_MODULES_FS_DIR + '/', '');
+  const pathParts = filePath.split('/').filter(p => p.length);
+  // ["node_modules", "lodash", "package.json"]
 
-  // lodash/package.json
-  const pathParts = urlPath.split('/');
+  if (pathParts[0] === 'node_modules') {
+    // ["lodash", "package.json"]
+    pathParts.shift();
+  }
+
+  let urlPath = filePath.replace(NODE_MODULES_FS_DIR + '/', '');
+  if (pathParts[0] === '@stencil' && pathParts[1] === 'core') {
+    // ["@stencil", "core", ...]
+    const compilerPath = config.sys_next.getExecutingPath();
+    const stencilCoreUrlRoot = new URL('../../../', compilerPath).href;
+    return new URL('./' + pathParts.join('/'), stencilCoreUrlRoot).href;
+  }
 
   const checkPathParts: string[] = [];
   for (const pathPart of pathParts) {
@@ -318,8 +326,30 @@ const getModuleFetchUrl = (filePath: string) => {
   return NODE_MODULES_CDN_URL + urlPath;
 };
 
-
 const shouldFetchModule = (p: string) => (IS_FETCH_ENV && !IS_NODE_ENV && p.startsWith(NODE_MODULES_FS_DIR));
+
+// prepopulating paths we know node resolve will check, but we already know they don't exist
+const known404Paths = new Set<string>();
+
+const addKnownFileSkips = (filePath: string) => {
+  // /node_modules/@stencil/core/internal/client
+  known404Paths.add(filePath + '.js');
+  known404Paths.add(filePath + '.ts');
+  known404Paths.add(filePath + '.tsx');
+  known404Paths.add(filePath + '.jsx');
+  known404Paths.add(filePath + '.json');
+  known404Paths.add(filePath + '/index.js');
+  known404Paths.add(filePath + '/index.ts');
+  known404Paths.add(filePath + '/index.tsx');
+  known404Paths.add(filePath + '/index.jsx');
+  known404Paths.add(filePath + '/index.json');
+  known404Paths.add(filePath + '/package.json');
+};
+addKnownFileSkips('/node_modules/@stencil/core/internal/client');
+known404Paths.add('/node_modules/@stencil/core/internal/client.mjs');
+
+addKnownFileSkips('/node_modules/@stencil/core/internal/client/build-conditionals');
+known404Paths.add('/node_modules/@stencil/core/internal/client/build-conditionals/index.mjs');
 
 
 const NODE_MODULES_FS_DIR = '/node_modules';

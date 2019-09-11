@@ -63,7 +63,7 @@ const getRollupOptions = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx
       rollupNodeResolvePlugin({
         mainFields: ['collection:main', 'jsnext:main', 'es2017', 'es2015', 'module', 'main'],
         browser: true,
-        customResolveOptions: createCustomResolverAsync(compilerCtx.fs, ['.tsx', '.ts', '.mjs', '.js', '.json']),
+        customResolveOptions: createCustomResolverAsync(config, compilerCtx.fs, ['.tsx', '.ts', '.mjs', '.js', '.json']),
         ...config.nodeResolve as any
       }),
       rollupJsonPlugin(),
