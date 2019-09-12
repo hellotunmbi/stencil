@@ -8,6 +8,7 @@ import aliasPlugin from './helpers/alias-plugin';
 import { bundleDts } from './helpers/bundle-dts-plugin';
 import modulesPlugin from './helpers/modules-plugin';
 import { buildCompilerPlugins } from './helpers/compiler-plugins';
+import { reorderCoreStatements } from './helpers/reorder-statements';
 import { rollup } from 'rollup';
 import ts from 'typescript';
 
@@ -169,6 +170,9 @@ const internalClientRuntime = {
         if (importee === '@utils') {
           return path.join(inputTsDir, 'utils', 'index.js');
         }
+      },
+      generateBundle(options, bundles) {
+        reorderCoreStatements(options, bundles);
       }
     },
     {
