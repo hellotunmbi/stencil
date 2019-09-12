@@ -62,7 +62,7 @@ const coreCompiler = {
         // extension module dts (.svg/.css)
         const dstExtModuleOutput = path.join(outputInternalDir, 'ext-modules.d.ts');
         fs.writeFileSync(dstExtModuleOutput, EXTENSION_MODULE_DTS);
-        dtsContent = `import './ext-modules';\n` + dtsContent;
+        dtsContent = `/// <reference path="./ext-modules.d.ts" />\n` + dtsContent;
 
         const dstOutput = path.join(outputInternalDir, 'index.d.ts');
         fs.writeFileSync(dstOutput, dtsContent);
