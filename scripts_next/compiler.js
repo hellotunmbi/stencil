@@ -57,7 +57,13 @@ const coreCompiler = {
       buildStart() {
         // bundle dts
         const entryDts = path.join(inputTsDir, 'internal.d.ts');
-        const dtsContent = bundleDts(entryDts);
+        let dtsContent = bundleDts(entryDts);
+
+        // extension module dts (.svg/.css)
+        const dstExtModuleOutput = path.join(outputInternalDir, 'ext-modules.d.ts');
+        fs.writeFileSync(dstExtModuleOutput, EXTENSION_MODULE_DTS);
+        dtsContent = `import './ext-modules';\n` + dtsContent;
+
         const dstOutput = path.join(outputInternalDir, 'index.d.ts');
         fs.writeFileSync(dstOutput, dtsContent);
       },
@@ -243,6 +249,19 @@ function getBanner(fileName) {
     `*/`
   ].join('\n');
 }
+
+
+const EXTENSION_MODULE_DTS = `
+declare module '*.svg' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.css' {
+  const src: string;
+  export default src;
+}
+`;
 
 
 export default [
