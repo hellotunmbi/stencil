@@ -138,7 +138,7 @@ const internalClientRuntime = {
     dir: outputClientDir,
     entryFileNames: '[name].mjs',
     chunkFileNames: '[name].[hash].mjs',
-    banner: getBanner('Stencil Client Runtime')
+    banner: getBanner('Stencil')
   },
   plugins: [
     {

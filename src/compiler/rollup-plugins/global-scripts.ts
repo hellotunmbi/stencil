@@ -1,4 +1,5 @@
 import * as d from '../../declarations';
+import { GLOBAL_BUNDLE_ID } from '../../compiler_next/bundle/entry-alias-ids';
 import { normalizePath } from '@utils';
 import { Plugin } from 'rollup';
 
@@ -38,7 +39,7 @@ export function globalScriptsPlugin(config: d.Config, compilerCtx: d.CompilerCtx
     resolveId(id) {
       if (id === GLOBAL_BUNDLE_ID) {
         return {
-          id,
+          id
         };
       }
       return null;
@@ -74,5 +75,3 @@ export function globalScriptsPlugin(config: d.Config, compilerCtx: d.CompilerCtx
 }
 
 const INJECT_CONTEXT = `import { Context } from '@stencil/core';\n`;
-export const GLOBAL_BUNDLE_ID = '@stencil/core/global-scripts';
-

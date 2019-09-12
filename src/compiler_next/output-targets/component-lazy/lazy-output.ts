@@ -8,9 +8,8 @@ import { getBuildFeatures, updateBuildConditionals } from '@build-conditionals';
 import { generateEntryModules } from '../../..//compiler/entries/entry-modules';
 import { isOutputTargetHydrate } from '../../../compiler/output-targets/output-utils';
 import { lazyComponentTransform } from '../../../compiler/transformers/component-lazy/transform-lazy-component';
-import { LAZY_BROWSER_ENTRY_ID, LAZY_EXTERNAL_ENTRY_ID } from './lazy-core-plugin';
+import { LAZY_BROWSER_ENTRY_ID, LAZY_EXTERNAL_ENTRY_ID, USER_INDEX_ENTRY_ID } from '../../bundle/entry-alias-ids';
 import { updateStencilCoreImports } from '../../../compiler/transformers/update-stencil-core-import';
-import { USER_INDEX_ENTRY_ID } from '../../../compiler_next/bundle/user-index-plugin';
 import ts from 'typescript';
 
 

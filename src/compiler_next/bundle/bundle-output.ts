@@ -5,8 +5,8 @@ import { createOnWarnFn, loadRollupDiagnostics } from '@utils';
 import { cssTransformer } from '../../compiler/rollup-plugins/css-transformer';
 import { globalScriptsPlugin } from '../../compiler/rollup-plugins/global-scripts';
 import { imagePlugin } from '../../compiler/rollup-plugins/image-plugin';
-import { lazyComponentPlugin } from '../output-targets/component-lazy/lazy-component-plugin';
 import { lazyCorePlugin } from '../output-targets/component-lazy/lazy-core-plugin';
+import { lazyComponentPlugin } from '../output-targets/component-lazy/lazy-component-plugin';
 import { pluginHelper } from '../../compiler/rollup-plugins/plugin-helper';
 import { rollupCommonjsPlugin, rollupJsonPlugin, rollupNodeResolvePlugin, rollupReplacePlugin } from '@compiler-plugins';
 import { RollupOptions, TreeshakingOptions, rollup } from 'rollup';
@@ -51,7 +51,7 @@ const getRollupOptions = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx
       stencilBuildConditionalsPlugin(bundleOpts.conditionals, config.fsNamespace),
       globalScriptsPlugin(config, compilerCtx),
       lazyComponentPlugin(buildCtx),
-      lazyCorePlugin(buildCtx),
+      lazyCorePlugin(config, buildCtx),
       userIndexPlugin(config, compilerCtx),
       rollupCommonjsPlugin({
         include: /node_modules/,

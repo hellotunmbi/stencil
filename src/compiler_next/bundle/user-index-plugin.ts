@@ -1,5 +1,6 @@
 import * as d from '../../declarations';
 import { Plugin } from 'rollup';
+import { USER_INDEX_ENTRY_ID } from './entry-alias-ids';
 import path from 'path';
 
 
@@ -33,4 +34,4 @@ export const userIndexPlugin = (config: d.Config, compilerCtx: d.CompilerCtx) =>
   return plugin;
 };
 
-export const USER_INDEX_ENTRY_ID = '@user-index-entrypoint';
+
