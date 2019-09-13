@@ -119,31 +119,40 @@ export const getStaticValue = (staticMembers: ts.ClassElement[], staticName: str
     return null;
   }
 
-  if (rtnStatement.expression.kind === ts.SyntaxKind.StringLiteral) {
+  const expKind = rtnStatement.expression.kind;
+  if (expKind === ts.SyntaxKind.StringLiteral) {
     return (rtnStatement.expression as ts.StringLiteral).text;
   }
 
-  if (rtnStatement.expression.kind === ts.SyntaxKind.TrueKeyword) {
+  if (expKind === ts.SyntaxKind.TrueKeyword) {
     return true;
   }
 
-  if (rtnStatement.expression.kind === ts.SyntaxKind.FalseKeyword) {
+  if (expKind === ts.SyntaxKind.FalseKeyword) {
     return false;
   }
 
-  if (rtnStatement.expression.kind === ts.SyntaxKind.ObjectLiteralExpression) {
+  if (expKind === ts.SyntaxKind.ObjectLiteralExpression) {
     return objectLiteralToObjectMap(rtnStatement.expression as any);
   }
 
-  if (rtnStatement.expression.kind === ts.SyntaxKind.ArrayLiteralExpression && (rtnStatement.expression as ts.ArrayLiteralExpression).elements) {
+  if (expKind === ts.SyntaxKind.ArrayLiteralExpression && (rtnStatement.expression as ts.ArrayLiteralExpression).elements) {
     return arrayLiteralToArray(rtnStatement.expression as any);
   }
 
-  if (rtnStatement.expression.kind === ts.SyntaxKind.Identifier) {
-    return {
-      __identifier: true,
-      __escapedText: (rtnStatement.expression as ts.Identifier).escapedText
-    } as ConvertIdentifier;
+  if (expKind === ts.SyntaxKind.Identifier) {
+    const identifier = (rtnStatement.expression as ts.Identifier);
+    if (typeof identifier.escapedText === 'string') {
+      return getIdentifierValue(identifier.escapedText);
+    }
+
+    if (identifier.escapedText) {
+      const obj: any = {};
+      Object.keys(identifier.escapedText).forEach(key => {
+        obj[key] = getIdentifierValue((identifier.escapedText as any)[key]);
+      });
+      return obj;
+    }
   }
 
   return null;
@@ -237,7 +246,7 @@ export const objectLiteralToObjectMap = (objectLiteral: ts.ObjectLiteralExpressi
         } else if (escapedText === 'null') {
           val = null;
         } else {
-          val = getIdentifierValue(attr.initializer as ts.Identifier);
+          val = getIdentifierValue((attr.initializer as ts.Identifier).escapedText);
         }
         break;
 
@@ -252,14 +261,11 @@ export const objectLiteralToObjectMap = (objectLiteral: ts.ObjectLiteralExpressi
   }, <ObjectMap>{});
 };
 
-const getIdentifierValue = (initializer: ts.Identifier) => {
-  const escapedText = initializer.escapedText as string;
-
+const getIdentifierValue = (escapedText: any) => {
   const identifier: ConvertIdentifier = {
     __identifier: true,
     __escapedText: escapedText
   };
-
   return identifier;
 };
 

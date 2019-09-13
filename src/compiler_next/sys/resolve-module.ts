@@ -198,11 +198,7 @@ const known404Urls = new Set<string>();
 const fetchCacheAsync = new Map<string, Promise<string>>();
 const pkgVersions = new Map<string, string>();
 
-const skipFetch = (url: string, filePath: string) => {
-  if (known404Urls.has(url)) {
-    return true;
-  }
-
+const skipFilePathFetch = (filePath: string) => {
   if (filePath.endsWith('.ts') || filePath.endsWith('.tsx')) {
     // don't bother trying to resolve  node_module packages w/ typescript files
     // they should already be .js files
@@ -222,8 +218,30 @@ const skipFetch = (url: string, filePath: string) => {
   return false;
 };
 
+const skipUrlFetch = (url: string) => {
+  // files we just already know not to try to resolve
+  if (knownUrlSkips.some(knownSkip => url.endsWith(knownSkip))) {
+    return true;
+  }
+  return false;
+};
+
 const fetchModuleSync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath: string) => {
-  if (skipFetch(url, filePath)) {
+  if (skipFilePathFetch(filePath)) {
+    return undefined;
+  }
+
+  const content = fetchUrlSync(url);
+  if (typeof content === 'string') {
+    writeFetchSuccess(inMemoryFs, url, filePath, content);
+  }
+
+  return content;
+};
+
+
+export const fetchUrlSync = (url: string) => {
+  if (known404Urls.has(url) || skipUrlFetch(url)) {
     return undefined;
   }
 
@@ -233,7 +251,6 @@ const fetchModuleSync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath
     xhr.send(null);
 
     if (xhr.status >= 200 && xhr.status < 300) {
-      writeFetchSuccess(inMemoryFs, url, filePath, xhr.responseText);
       return xhr.responseText;
 
     } else {
@@ -249,7 +266,7 @@ const fetchModuleSync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath
 
 
 const fetchModuleAsync = (inMemoryFs: d.InMemoryFileSystem, url: string, filePath: string) => {
-  if (skipFetch(url, filePath)) {
+  if (skipFilePathFetch(filePath) || skipUrlFetch(url)) {
     return Promise.resolve(undefined);
   }
 
@@ -338,3 +355,9 @@ const shouldFetchModule = (p: string) => (IS_FETCH_ENV && !IS_NODE_ENV && p.star
 
 const NODE_MODULES_FS_DIR = '/node_modules';
 const NODE_MODULES_CDN_URL = 'https://cdn.jsdelivr.net/npm/';
+
+const knownUrlSkips = [
+  '/@stencil/core/internal.mjs',
+  '/@stencil/core/internal.js',
+  '/@stencil/core/internal.json',
+];

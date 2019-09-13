@@ -27,7 +27,7 @@
     "baseUrl": ".",
     "paths": {
       "@build-conditionals": [
-        "../compiler/app-core/build-conditionals.ts"
+        "../app-data/index.ts"
       ],
       "@compiler": [
         "../compiler/index.ts"

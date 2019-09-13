@@ -1,6 +1,7 @@
-import * as d from '../declarations';
+import { Build } from '@stencil/core/internal';
 
-export const BUILD: d.Build = {
+
+export const BUILD: Build = /* default */ {
   allRenderFn: false,
   cmpDidLoad: true,
   cmpDidUnload: true,
@@ -10,7 +11,6 @@ export const BUILD: d.Build = {
   cmpWillUpdate: true,
   cmpWillRender: true,
   connectedCallback: true,
-  cssAnnotations: true,
   disconnectedCallback: true,
   element: true,
   event: true,
@@ -48,8 +48,7 @@ export const BUILD: d.Build = {
   vdomText: true,
   watchCallback: true,
   taskQueue: true,
-
-  hotModuleReplacement: false,
+  hotModuleReplacement: true,
   isDebug: false,
   isDev: false,
   hydrateServerSide: false,
@@ -60,4 +59,6 @@ export const BUILD: d.Build = {
   slotRelocation: true
 };
 
-export const NAMESPACE = 'app';
+export const GLOBAL_SCRIPTS = /* default */ () => {/**/};
+
+export const NAMESPACE = /* default */ 'app' as string;

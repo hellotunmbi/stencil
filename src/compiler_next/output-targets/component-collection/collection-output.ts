@@ -2,6 +2,7 @@ import * as d from '../../../declarations';
 import { catchError, normalizePath } from '@utils';
 import { convertDecoratorsToStatic } from '../../../compiler/transformers/decorators-to-static/convert-decorators';
 import { convertStaticToMeta } from '../../../compiler/transformers/static-to-meta/visitor';
+import { STENCIL_CORE_ID } from '../../bundle/entry-alias-ids';
 import { isOutputTargetCollectionNext } from '../../../compiler/output-targets/output-utils';
 import { updateStencilCoreImports } from '../../../compiler/transformers/update-stencil-core-import';
 import path from 'path';
@@ -61,7 +62,7 @@ export const collectionOutput = async (config: d.Config, compilerCtx: d.Compiler
 
 const getCollectionCustomTransformers = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx: d.BuildCtx, tsTypeChecker: ts.TypeChecker) => {
   const transformOpts: d.TransformOptions = {
-    coreImportPath: '@stencil/core',
+    coreImportPath: STENCIL_CORE_ID,
     componentExport: null,
     componentMetadata: null,
     proxy: null,

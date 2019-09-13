@@ -4,8 +4,8 @@ import { USER_INDEX_ENTRY_ID } from './entry-alias-ids';
 import path from 'path';
 
 
-export const userIndexPlugin = (config: d.Config, compilerCtx: d.CompilerCtx) => {
-  const plugin: Plugin = {
+export const userIndexPlugin = (config: d.Config, compilerCtx: d.CompilerCtx): Plugin => {
+  return {
     name: 'userIndexPlugin',
 
     resolveId(importee) {
@@ -30,8 +30,6 @@ export const userIndexPlugin = (config: d.Config, compilerCtx: d.CompilerCtx) =>
       return null;
     }
   };
-
-  return plugin;
 };
 
 

@@ -1,10 +1,13 @@
 import * as d from '../../../declarations';
-import { GLOBAL_BUNDLE_ID, LAZY_BROWSER_ENTRY_ID, LAZY_EXTERNAL_ENTRY_ID, RUNTIME_CLIENT_ID } from '../../bundle/entry-alias-ids';
+import { LAZY_BROWSER_ENTRY_ID, LAZY_EXTERNAL_ENTRY_ID, STENCIL_INTERNAL_ID } from '../../bundle/entry-alias-ids';
 import { Plugin } from 'rollup';
 
 
-export const lazyCorePlugin = (_config: d.Config, _buildCtx: d.BuildCtx) => {
-  const plugin: Plugin = {
+export const lazyCorePlugin = (_config: d.Config, _buildCtx: d.BuildCtx): Plugin => {
+  const lazyBundles: d.LazyBundlesRuntimeData = [];
+  const lazyBundlesStr = JSON.stringify(lazyBundles);
+
+  return {
     name: 'lazyCorePlugin',
 
     resolveId(importee) {
@@ -16,48 +19,34 @@ export const lazyCorePlugin = (_config: d.Config, _buildCtx: d.BuildCtx) => {
 
     load(id) {
       if (id === LAZY_BROWSER_ENTRY_ID) {
-        return getLazyBundleData(BROWSER_ENTRY);
+        return LAZY_BROWSER_ENTRY.replace(LAZY_BUNDLES_PLACEHOLDER, lazyBundlesStr);
       }
-
       if (id === LAZY_EXTERNAL_ENTRY_ID) {
-        return getLazyBundleData(EXTERNAL_ENTRY);
+        return LAZY_EXTERNAL_ENTRY.replace(LAZY_BUNDLES_PLACEHOLDER, lazyBundlesStr);
       }
-
       return null;
     }
   };
-
-  return plugin;
 };
 
-
-const getLazyBundleData = (code: string) => {
-  return code.replace(DATA_PLACEHOLDER, DATA_PLACEHOLDER + '/** TODO!! **/');
-};
+const LAZY_BUNDLES_PLACEHOLDER = `[/*!__STENCIL_LAZY_DATA__*/]`;
 
 
-const DATA_PLACEHOLDER = `[/*!__STENCIL_LAZY_DATA__*/]`;
+const LAZY_BROWSER_ENTRY = `
+import { GLOBAL_SCRIPTS, bootstrapLazy, patchBrowser } from '${STENCIL_INTERNAL_ID}';
 
-// This is for webpack
-const EXTERNAL_ENTRY = `
-import globals from '${GLOBAL_BUNDLE_ID}';
-import { bootstrapLazy, patchEsm } from '${RUNTIME_CLIENT_ID}';
-
-export const defineCustomElements = (win, options) => {
-  return patchEsm().then(() => {
-    globals();
-    bootstrapLazy(${DATA_PLACEHOLDER}, options);
-  });
-};
+patchBrowser().then(options => {
+  GLOBAL_SCRIPTS();
+  return bootstrapLazy(${LAZY_BUNDLES_PLACEHOLDER}, options);
+});
 `;
 
 
-const BROWSER_ENTRY = `
-import globals from '${GLOBAL_BUNDLE_ID}';
-import { bootstrapLazy, patchBrowser } from '${RUNTIME_CLIENT_ID}';
+const LAZY_EXTERNAL_ENTRY = `
+import { GLOBAL_SCRIPTS, bootstrapLazy, patchEsm } from '${STENCIL_INTERNAL_ID}';
 
-patchBrowser().then(options => {
-  globals();
-  return bootstrapLazy(${DATA_PLACEHOLDER}, options);
+export const defineCustomElements = (win, options) => patchEsm().then(() => {
+  GLOBAL_SCRIPTS();
+  bootstrapLazy(${LAZY_BUNDLES_PLACEHOLDER}, options);
 });
 `;

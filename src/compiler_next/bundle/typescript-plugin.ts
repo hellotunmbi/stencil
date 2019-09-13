@@ -2,8 +2,8 @@ import { BundleOptions } from './bundle-interface';
 import { Plugin, TransformResult } from 'rollup';
 
 
-export const typescriptPlugin = (bundleOpts: BundleOptions) => {
-  const plugin: Plugin = {
+export const typescriptPlugin = (bundleOpts: BundleOptions): Plugin => {
+  return {
     name: `${bundleOpts.id}TypescriptPlugin`,
 
     transform(code, id) {
@@ -35,6 +35,4 @@ export const typescriptPlugin = (bundleOpts: BundleOptions) => {
       return transformResult;
     }
   };
-
-  return plugin;
 };

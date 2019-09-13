@@ -32,18 +32,42 @@
 name: `/src/hello-world.tsx`,
 code:
 `
-import _ from 'lodash';
+// import _ from 'lodash';
 import { Component } from '@stencil/core';
 // import { getText } from './util';
+import ios from './ios.css'
+import md from './md.css'
 
 @Component({
-  tag: 'hello-world'
+  tag: 'hello-world',
+  styles: {
+    ios: ios,
+    md: md
+  }
 })
 export class HelloWorld {
   render() {
-    const val: string = _.uniq([5, 5]);
-    return val;
+    // const val: string = getText();
+    return 'val';
   }
+}
+`
+},
+{
+name: `/src/ios.css`,
+code:
+`
+div {
+  color: blue;
+}
+`
+},
+{
+name: `/src/md.css`,
+code:
+`
+div {
+  color: green;
 }
 `
 },

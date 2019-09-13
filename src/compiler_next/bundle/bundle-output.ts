@@ -1,16 +1,15 @@
 import * as d from '../../declarations';
+import { appDataPlugin } from './app-data-plugin';
 import { BundleOptions } from './bundle-interface';
 import { createCustomResolverAsync } from '../sys/resolve-module';
 import { createOnWarnFn, loadRollupDiagnostics } from '@utils';
-import { cssTransformer } from '../../compiler/rollup-plugins/css-transformer';
-import { globalScriptsPlugin } from '../../compiler/rollup-plugins/global-scripts';
+import { extensionTransformerPlugin } from './extension-transformer-plugin';
 import { imagePlugin } from '../../compiler/rollup-plugins/image-plugin';
 import { lazyCorePlugin } from '../output-targets/component-lazy/lazy-core-plugin';
 import { lazyComponentPlugin } from '../output-targets/component-lazy/lazy-component-plugin';
 import { pluginHelper } from '../../compiler/rollup-plugins/plugin-helper';
 import { rollupCommonjsPlugin, rollupJsonPlugin, rollupNodeResolvePlugin, rollupReplacePlugin } from '@compiler-plugins';
 import { RollupOptions, TreeshakingOptions, rollup } from 'rollup';
-import { stencilBuildConditionalsPlugin } from '../../compiler/rollup-plugins/stencil-build-conditionals';
 import { sysPlugin } from './sys-plugin';
 import { typescriptPlugin } from './typescript-plugin';
 import { userIndexPlugin } from './user-index-plugin';
@@ -47,9 +46,7 @@ const getRollupOptions = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx
     input: bundleOpts.inputs,
 
     plugins: [
-      // stencilExternalRuntimePlugin(bundleAppOptions.externalRuntime),
-      stencilBuildConditionalsPlugin(bundleOpts.conditionals, config.fsNamespace),
-      globalScriptsPlugin(config, compilerCtx),
+      appDataPlugin(config, compilerCtx, bundleOpts.conditionals),
       lazyComponentPlugin(buildCtx),
       lazyCorePlugin(config, buildCtx),
       userIndexPlugin(config, compilerCtx),
@@ -68,7 +65,7 @@ const getRollupOptions = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx
       }),
       rollupJsonPlugin(),
       imagePlugin(config, buildCtx),
-      cssTransformer(config, compilerCtx, buildCtx),
+      extensionTransformerPlugin(config, compilerCtx, buildCtx),
       rollupReplacePlugin({
         'process.env.NODE_ENV': config.devMode ? '"development"' : '"production"'
       }),
@@ -85,7 +82,6 @@ const getRollupOptions = (config: d.Config, compilerCtx: d.CompilerCtx, buildCtx
 
   return rollupOptions;
 };
-
 
 const getTreeshakeOption = (config: d.Config) => {
   const treeshake: TreeshakingOptions | boolean = !config.devMode && config.rollupConfig.inputOptions.treeshake !== false

@@ -45,7 +45,7 @@ export interface ComponentOptions {
    *
    * Notice, you can't use sass, or less, only `css` is allowed using `styles`, use `styleUrl` is you need more advanced features.
    */
-  styles?: string;
+  styles?: string | { [modeName: string]: any };
 
   /**
    * Array of relative links to folders of assets required by the component.

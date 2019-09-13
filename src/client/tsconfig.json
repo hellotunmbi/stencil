@@ -25,10 +25,16 @@
     "baseUrl": ".",
     "paths": {
       "@build-conditionals": [
-        "../compiler/app-core/build-conditionals.ts"
+        "../app-data/internal.ts"
       ],
       "@runtime": [
         "../runtime/index.ts"
+      ],
+      "@stencil/core/internal/app-data": [
+        "../app-data/internal.ts"
+      ],
+      "@stencil/core/internal": [
+        "../internal/index.ts"
       ],
       "@utils": [
         "../utils/index.ts"

@@ -4,8 +4,8 @@ import { Plugin } from 'rollup';
 import path from 'path';
 
 
-export const sysPlugin = (fs: d.InMemoryFileSystem) => {
-  const plugin: Plugin = {
+export const sysPlugin = (fs: d.InMemoryFileSystem): Plugin => {
+  return {
     name: 'sysPlugin',
 
     async resolveId(importee, importer) {
@@ -47,8 +47,6 @@ export const sysPlugin = (fs: d.InMemoryFileSystem) => {
       return fs.readFile(id);
     }
   };
-
-  return plugin;
 };
 
 

@@ -1,9 +1,12 @@
-import * as d from '../../declarations';
+import { Build, BuildFeatures, ComponentCompilerMeta, Config, Module, ModuleMap } from '@stencil/core/internal';
 
 
-export function getBuildFeatures(cmps: d.ComponentCompilerMeta[]) {
+export * from './public';
+
+
+export const getBuildFeatures = (cmps: ComponentCompilerMeta[]) => {
   const slot = cmps.some(c => c.htmlTagNames.includes('slot'));
-  const f: d.BuildFeatures = {
+  const f: BuildFeatures = {
     allRenderFn: cmps.every(c => c.hasRenderFn),
     cmpDidLoad: cmps.some(c => c.hasComponentDidLoadFn),
     cmpDidUnload: cmps.some(c => c.hasComponentDidUnloadFn),
@@ -58,10 +61,10 @@ export function getBuildFeatures(cmps: d.ComponentCompilerMeta[]) {
   };
 
   return f;
-}
+};
 
 
-export function updateComponentBuildConditionals(moduleMap: d.ModuleMap, cmps: d.ComponentCompilerMeta[]) {
+export const updateComponentBuildConditionals = (moduleMap: ModuleMap, cmps: ComponentCompilerMeta[]) => {
   cmps.forEach(cmp => {
     const importedModules = getModuleImports(moduleMap, cmp.sourceFilePath, []);
     importedModules.forEach(importedModule => {
@@ -81,10 +84,10 @@ export function updateComponentBuildConditionals(moduleMap: d.ModuleMap, cmps: d
       cmp.potentialCmpRefs.push(...importedModule.potentialCmpRefs);
     });
   });
-}
+};
 
 
-function getModuleImports(moduleMap: d.ModuleMap, filePath: string, importedModules: d.Module[]) {
+const getModuleImports = (moduleMap: ModuleMap, filePath: string, importedModules: Module[]) => {
   let moduleFile = moduleMap.get(filePath);
   if (moduleFile == null) {
     moduleFile = moduleMap.get(filePath + '.tsx');
@@ -104,10 +107,10 @@ function getModuleImports(moduleMap: d.ModuleMap, filePath: string, importedModu
     });
   }
   return importedModules;
-}
+};
 
 
-export function updateBuildConditionals(config: d.Config, b: d.Build) {
+export const updateBuildConditionals = (config: Config, b: Build) => {
   b.isDebug = (config.logLevel === 'debug');
   b.isDev = !!config.devMode;
   b.lifecycleDOMEvents = !!(b.isDebug || config._isTesting || config._lifecycleDOMEvents);
@@ -117,10 +120,6 @@ export function updateBuildConditionals(config: d.Config, b: d.Build) {
   b.member = (b.member || b.updatable || b.mode || b.lifecycle);
   b.taskQueue = (b.updatable || b.mode || b.lifecycle);
   b.constructableCSS = !b.hotModuleReplacement || !!config._isTesting;
-  b.initializeNextTick = true; // config.outputTargets.some(isOutputTargetAngular);
+  b.initializeNextTick = true;
   b.cssAnnotations = true;
-}
-
-
-export const BUILD: d.Build = {};
-export const NAMESPACE = 'app';
+};

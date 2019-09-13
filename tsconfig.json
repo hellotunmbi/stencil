@@ -25,7 +25,7 @@
     "baseUrl": ".",
     "paths": {
       "@build-conditionals": [
-        "src/compiler/app-core/build-conditionals.ts"
+        "src/app-data/internal.ts"
       ],
       "@compiler": [
         "src/compiler_next/index-core.ts"
@@ -54,8 +54,14 @@
       "@testing": [
         "src/testing/index.ts"
       ],
+      "@stencil/core/internal/app-data": [
+        "src/app-data/internal.ts"
+      ],
+      "@stencil/core/internal/client": [
+        "src/client/index.ts"
+      ],
       "@stencil/core/internal": [
-        "src/internal.ts"
+        "src/internal/index.ts"
       ],
       "@stencil/core/testing": [
         "src/testing/index.ts"
@@ -67,8 +73,11 @@
   },
 
   "files": [
-    "src/internal.ts",
     "src/public.ts",
+    "src/internal/index.ts",
+    "src/internal/public.ts",
+    "src/app-data/internal.ts",
+    "src/app-data/public.ts",
     "src/cli_next/public.ts",
     "src/compiler_next/public-browser.ts",
     "src/compiler_next/public-core.ts",
@@ -76,10 +85,10 @@
     "src/dev-server_next/public.ts",
     "src/dev-server_next/index-worker.ts",
     "src/dev-server_next/dev-client/index.ts",
-    "src/client/build-conditionals.ts",
     "src/client/index.ts",
-    "src/client/polyfills/css-shim/index.ts",
+    "src/client/polyfills/css-shim/index.ts"
   ],
+
   "include": [
     "types/*.d.ts"
   ]

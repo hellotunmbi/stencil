@@ -2,7 +2,7 @@ import * as d from '../../declarations';
 import { catchError, normalizePath } from '@utils';
 import { dependencies } from './dependencies';
 import { IS_NODE_ENV, IS_WEB_WORKER_ENV } from './environment';
-import { resolveModuleIdSync, resolveRemotePackageJsonSync } from './resolve-module';
+import { fetchUrlSync, resolveModuleIdSync, resolveRemotePackageJsonSync } from './resolve-module';
 import { version } from '../../version';
 import path from 'path';
 import ts from 'typescript';
@@ -14,7 +14,7 @@ export const patchTypescript = async (config: d.Config, diagnostics: d.Diagnosti
   Object.assign(ts, loadedTs);
 
   if (!ts.sys) {
-    ts.sys = createTsSys(config);
+    ts.sys = createTsSys(config, inMemoryFs);
   }
 
   const compilerPath = config.sys_next.getExecutingPath();
@@ -114,8 +114,7 @@ export const getTypescript = (diagnostics: d.Diagnostic[]) => {
 };
 
 
-const createTsSys = (config: d.Config) => {
-  const tsDep = dependencies.find(dep => dep.name === 'typescript');
+const createTsSys = (config: d.Config, inMemoryFs: d.InMemoryFileSystem) => {
   const stencilSys = config.sys_next;
 
   const visitDirectory = (matchingPaths: Set<string>, p: string, extensions: ReadonlyArray<string>) => {
@@ -145,24 +144,18 @@ const createTsSys = (config: d.Config) => {
       stencilSys.mkdirSync(p);
     },
     directoryExists(p) {
-      const s = stencilSys.statSync(p);
-      if (s) {
-        return s.isDirectory();
-      }
-      return false;
+      const s = inMemoryFs.statSync(p);
+      return s.isDirectory;
     },
     exit(exitCode) {
       config.logger.error(`typescript exit: ${exitCode}`);
     },
     fileExists(p) {
-      const s = stencilSys.statSync(p);
-      if (s) {
-        return s.isFile();
-      }
-      return false;
+      const s = inMemoryFs.statSync(p);
+      return s.isFile;
     },
     getExecutingFilePath() {
-      return tsDep.url;
+      return dependencies.find(dep => dep.name === 'typescript').url;
     },
     getCurrentDirectory() {
       return stencilSys.getCurrentDirectory();
@@ -179,18 +172,17 @@ const createTsSys = (config: d.Config) => {
       visitDirectory(matchingPaths, p, extensions);
       return Array.from(matchingPaths);
     },
-    readFile(p, encoding) {
-      let content = stencilSys.readFileSync(p, encoding);
+    readFile(p) {
+      let content = inMemoryFs.readFileSync(p);
 
       if (typeof content !== 'string' && (p.startsWith('https:') || p.startsWith('http:'))) {
         if (IS_WEB_WORKER_ENV) {
-          content = fetchRemoteContent(p);
+          content = fetchUrlSync(p);
           if (typeof content === 'string') {
             stencilSys.writeFileSync(p, content);
           }
-
         } else {
-          throw new Error(`stencil compiler must be ran from within a web worker to load: ${p}`);
+          config.logger.error(`ts.sys can only request http resources from within a web worker: ${p}`);
         }
       }
 
@@ -226,28 +218,14 @@ const createTsSys = (config: d.Config) => {
       };
     },
     writeFile(p, data) {
+      inMemoryFs.writeFile(p, data);
       stencilSys.writeFileSync(p, data);
     },
     write(s) {
-      console.log('ts.sys.write', s);
+      config.logger.info('ts.sys.write', s);
     }
   };
   return tsSys;
-};
-
-
-const fetchRemoteContent = (url: string) => {
-  let content: string = undefined;
-  const xhr = new XMLHttpRequest();
-
-  xhr.open('GET', url, false); // synchronous request
-  xhr.send(null);
-
-  if (xhr.status >= 200 && xhr.status < 300) {
-    content = xhr.responseText;
-  }
-
-  return content;
 };
 
 

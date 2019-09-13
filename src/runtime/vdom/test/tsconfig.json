@@ -30,7 +30,7 @@
         "../../../testing/index.ts"
       ],
       "@build-conditionals": [
-        "../../../compiler/app-core/build-conditionals.ts"
+        "../../../app-data/index.ts"
       ],
       "@utils": [
         "../../../utils/index.ts"

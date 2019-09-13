@@ -9,3 +9,4 @@ export * from './client-task-queue';
 export * from './client-build';
 export * from './import-shims';
 export * from '@runtime';
+export { BUILD, GLOBAL_SCRIPTS, NAMESPACE } from '@stencil/core/internal/app-data';

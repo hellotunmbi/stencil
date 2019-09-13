@@ -6,9 +6,9 @@ import { convertDecoratorsToStatic } from '../../../compiler/transformers/decora
 import { convertStaticToMeta } from '../../../compiler/transformers/static-to-meta/visitor';
 import { getBuildFeatures, updateBuildConditionals } from '@build-conditionals';
 import { generateEntryModules } from '../../..//compiler/entries/entry-modules';
+import { LAZY_BROWSER_ENTRY_ID, LAZY_EXTERNAL_ENTRY_ID, STENCIL_INTERNAL_ID, USER_INDEX_ENTRY_ID } from '../../bundle/entry-alias-ids';
 import { isOutputTargetHydrate } from '../../../compiler/output-targets/output-utils';
-import { lazyComponentTransform } from '../../../compiler/transformers/component-lazy/transform-lazy-component';
-import { LAZY_BROWSER_ENTRY_ID, LAZY_EXTERNAL_ENTRY_ID, USER_INDEX_ENTRY_ID } from '../../bundle/entry-alias-ids';
+import { lazyComponentTransform } from '../../transformers/component-lazy/transform-lazy-component';
 import { updateStencilCoreImports } from '../../../compiler/transformers/update-stencil-core-import';
 import ts from 'typescript';
 
@@ -88,7 +88,7 @@ const getCustomTransformers = (config: d.Config, compilerCtx: d.CompilerCtx, bui
   const tsTypeChecker = tsBuilder.getProgram().getTypeChecker();
 
   const transformOpts: d.TransformOptions = {
-    coreImportPath: '@stencil/core/internal/client_next/index.mjs',
+    coreImportPath: STENCIL_INTERNAL_ID,
     componentExport: 'lazy',
     componentMetadata: null,
     proxy: null,

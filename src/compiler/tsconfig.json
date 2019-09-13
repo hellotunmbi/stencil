@@ -26,7 +26,7 @@
     "baseUrl": ".",
     "paths": {
       "@build-conditionals": [
-        "./app-core/build-conditionals.ts"
+        "../app-data/internal.ts"
       ],
       "@platform": [
         "../client/index.ts"
